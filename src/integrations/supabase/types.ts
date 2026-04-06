@@ -217,6 +217,7 @@ export type Database = {
     }
     Functions: {
       get_complete_schema: { Args: never; Returns: Json }
+      get_user_agency_id: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
