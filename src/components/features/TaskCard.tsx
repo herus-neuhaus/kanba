@@ -18,41 +18,73 @@ const labelColors: Record<string, string> = {
   copy: 'bg-warning/20 text-warning',
   social: 'bg-accent/20 text-accent',
 };
-
 export function TaskCard({ task, isDragging }: Props) {
   const isOverdue = task.due_date && isPast(new Date(task.due_date)) && task.status !== 'done';
 
+  const priorityInfo: Record<string, { border: string, text: string, label: string }> = {
+    alta: { border: 'border-l-destructive', text: 'text-destructive', label: 'Alta' },
+    media: { border: 'border-l-warning', text: 'text-warning', label: 'Média' },
+    baixa: { border: 'border-l-accent', text: 'text-accent', label: 'Baixa' },
+  };
+
+  const p = priorityInfo[task.priority || 'baixa'];
+
   return (
-    <Card className={cn('cursor-pointer hover:border-primary/30 transition-all', isDragging && 'shadow-lg ring-2 ring-primary/30')}>
-      <CardContent className="p-3 space-y-2">
-        <p className="font-medium text-sm leading-tight">{task.title}</p>
+    <Card className={cn(
+      'group relative cursor-pointer hover:shadow-md transition-all duration-200 border-l-4 overflow-hidden',
+      p.border,
+      isOverdue ? 'ring-2 ring-destructive shadow-sm' : '',
+      isDragging && 'shadow-xl ring-2 ring-primary/20 scale-[1.02]'
+    )}>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-start justify-between gap-2">
+           <div className="flex items-center gap-2 truncate">
+              {task.labels && task.labels[0] && (
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">
+                   {task.labels[0]}
+                </span>
+              )}
+              {isOverdue && (
+                <Badge variant="destructive" className="h-3.5 px-1 py-0 text-[8px] font-black uppercase animate-pulse">
+                   Atrasado
+                </Badge>
+              )}
+           </div>
+           
+           <div className={cn('text-[9px] font-black uppercase tracking-tight flex items-center gap-1.5 shrink-0', p.text)}>
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
+              {p.label}
+           </div>
+        </div>
 
-        {task.labels && task.labels.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            {task.labels.map(l => (
-              <Badge key={l} variant="secondary" className={cn('text-[10px] px-1.5 py-0', labelColors[l.toLowerCase()] || '')}>
-                {l}
-              </Badge>
-            ))}
-          </div>
-        )}
+        <h3 className="font-semibold text-[13px] leading-snug group-hover:text-primary transition-colors line-clamp-2 min-h-[2.5em] flex items-center">
+          {task.title}
+        </h3>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
-            {task.due_date && (
-              <span className={cn('flex items-center gap-1', isOverdue && 'text-destructive')}>
+            {task.due_date ? (
+              <div className={cn(
+                'flex items-center gap-1.5 px-2 py-1 rounded-sm text-[10px] font-bold',
+                isOverdue ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'
+              )}>
                 <Calendar className="h-3 w-3" />
                 {format(new Date(task.due_date), 'dd MMM', { locale: ptBR })}
-              </span>
+              </div>
+            ) : (
+              <div className="text-[10px] text-muted-foreground/50 italic font-medium px-2 py-1">Sem data</div>
             )}
           </div>
-          {task.assignee && (
-            <Avatar className="h-6 w-6">
-              <AvatarFallback className="bg-primary/20 text-primary text-[10px]">
-                {task.assignee.full_name?.charAt(0)?.toUpperCase() || '?'}
-              </AvatarFallback>
-            </Avatar>
-          )}
+
+          <div className="flex items-center gap-2">
+             {task.assignee && (
+                <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-muted transition-transform group-hover:scale-110">
+                  <AvatarFallback className="bg-primary/5 text-primary text-[9px] font-black">
+                    {task.assignee.full_name?.charAt(0)?.toUpperCase() || '?'}
+                  </AvatarFallback>
+                </Avatar>
+             )}
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -17,24 +17,36 @@ export type Database = {
       agencies: {
         Row: {
           created_at: string | null
+          demand_types: string[] | null
+          evolution_instance_name: string | null
           id: string
           name: string
           owner_user_id: string | null
           plan: string | null
+          whatsapp_connected: boolean | null
+          whatsapp_number: string | null
         }
         Insert: {
           created_at?: string | null
+          demand_types?: string[] | null
+          evolution_instance_name?: string | null
           id?: string
           name: string
           owner_user_id?: string | null
           plan?: string | null
+          whatsapp_connected?: boolean | null
+          whatsapp_number?: string | null
         }
         Update: {
           created_at?: string | null
+          demand_types?: string[] | null
+          evolution_instance_name?: string | null
           id?: string
           name?: string
           owner_user_id?: string | null
           plan?: string | null
+          whatsapp_connected?: boolean | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
@@ -57,7 +69,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           task_id?: string | null
-          text?: string
+          text: string
           user_id?: string | null
         }
         Relationships: [
@@ -77,6 +89,76 @@ export type Database = {
           },
         ]
       }
+      invites: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          email: string | null
+          id: string
+          role: string | null
+          token: string
+          used: boolean | null
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          token?: string
+          used?: boolean | null
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          role?: string | null
+          token?: string
+          used?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invites_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notification_logs: {
+        Row: {
+          id: string
+          recipient_phone: string
+          sent_at: string | null
+          task_id: string | null
+          type: string
+        }
+        Insert: {
+          id?: string
+          recipient_phone: string
+          sent_at?: string | null
+          task_id?: string | null
+          type: string
+        }
+        Update: {
+          id?: string
+          recipient_phone?: string
+          sent_at?: string | null
+          task_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_logs_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           agency_id: string | null
@@ -85,6 +167,7 @@ export type Database = {
           id: string
           phone: string | null
           role: string | null
+          status: string | null
         }
         Insert: {
           agency_id?: string | null
@@ -93,6 +176,7 @@ export type Database = {
           id: string
           phone?: string | null
           role?: string | null
+          status?: string | null
         }
         Update: {
           agency_id?: string | null
@@ -101,6 +185,7 @@ export type Database = {
           id?: string
           phone?: string | null
           role?: string | null
+          status?: string | null
         }
         Relationships: [
           {
@@ -157,6 +242,8 @@ export type Database = {
           due_date: string | null
           id: string
           labels: string[] | null
+          last_notified_at: string | null
+          priority: string | null
           project_id: string | null
           status: string | null
           title: string
@@ -170,6 +257,8 @@ export type Database = {
           due_date?: string | null
           id?: string
           labels?: string[] | null
+          last_notified_at?: string | null
+          priority?: string | null
           project_id?: string | null
           status?: string | null
           title: string
@@ -183,6 +272,8 @@ export type Database = {
           due_date?: string | null
           id?: string
           labels?: string[] | null
+          last_notified_at?: string | null
+          priority?: string | null
           project_id?: string | null
           status?: string | null
           title?: string
@@ -218,6 +309,7 @@ export type Database = {
     Functions: {
       get_complete_schema: { Args: never; Returns: Json }
       get_user_agency_id: { Args: never; Returns: string }
+      is_agency_admin_of: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

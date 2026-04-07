@@ -65,4 +65,60 @@
   .glass-card {
     @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-lg;
   }
+
+  .perspective-1000 {
+    perspective: 1000px;
+  }
+
+  .animate-progress-indeterminative {
+    animation: progress-indeterminative 1.5s infinite linear;
+    width: 30%;
+    position: relative;
+    left: -30%;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes progress-indeterminative {
+    0% {
+      left: -30%;
+      width: 10%;
+    }
+    50% {
+      left: 20%;
+      width: 50%;
+    }
+    100% {
+      left: 100%;
+      width: 30%;
+    }
+  }
+}
+
+/* Premium Phone Input Stylings */
+.react-international-phone-country-selector-dropdown {
+  @apply !bg-[#131b2b] !border-border !shadow-2xl !rounded-2xl !py-2 !mt-2;
+}
+
+.react-international-phone-country-selector-list-item {
+  @apply !bg-transparent !text-foreground !font-bold !text-[11px] !uppercase !py-2 !px-4 !transition-colors hover:!bg-primary/10;
+}
+
+.react-international-phone-country-selector-list-item--selected {
+  @apply !bg-primary/20 !text-primary;
+}
+
+.react-international-phone-country-selector-list-item__country-name {
+  @apply !font-black !tracking-tight;
+}
+
+.react-international-phone-country-selector-list-item__dial-code {
+  @apply !opacity-40 !text-[10px];
+}
+
+/* Custom width for search/container if needed */
+.premium-phone-container .react-international-phone-input {
+  @apply shadow-inner;
 }

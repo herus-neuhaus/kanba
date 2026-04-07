@@ -3,6 +3,7 @@ export interface Agency {
   name: string;
   owner_user_id: string | null;
   plan: string | null;
+  demand_types: string[] | null;
   created_at: string | null;
 }
 
@@ -12,6 +13,7 @@ export interface Profile {
   full_name: string | null;
   phone: string | null;
   role: string | null;
+  status: string | null;
   created_at: string | null;
 }
 
@@ -31,6 +33,7 @@ export interface Task {
   title: string;
   description: string | null;
   status: string | null;
+  priority: 'alta' | 'media' | 'baixa' | null;
   assignee_id: string | null;
   due_date: string | null;
   labels: string[] | null;
@@ -57,11 +60,20 @@ export interface Comment {
 }
 
 export const KANBAN_COLUMNS = [
-  { id: 'todo', label: 'A Fazer' },
-  { id: 'in_progress', label: 'Em Andamento' },
+  { id: 'backlog', label: 'Backlog' },
+  { id: 'production', label: 'Em Produção' },
   { id: 'internal_review', label: 'Revisão Interna' },
-  { id: 'client_review', label: 'Revisão Cliente' },
-  { id: 'done', label: 'Concluído' },
+  { id: 'approval', label: 'Em Aprovação' },
+  { id: 'done', label: 'Aprovado / Publicado' },
+] as const;
+
+export const DEMAND_TYPES = [
+  'Post',
+  'Criativo',
+  'Vídeo',
+  'Copy',
+  'Landing Page'
 ] as const;
 
 export type KanbanStatus = typeof KANBAN_COLUMNS[number]['id'];
+export type DemandType = typeof DEMAND_TYPES[number] | string;

@@ -29,7 +29,7 @@ export function useComments(taskId: string | null) {
       if (mentionedUsers?.length) {
         for (const u of mentionedUsers) {
           if (u.phone) {
-            await sendWhatsAppNotification(u.phone, `📋 KanbaEasy: Você foi mencionado em um comentário:\n\n"${text}"`);
+            await sendWhatsAppNotification(u.phone, `📋 Kanba: Você foi mencionado em um comentário:\n\n"${text}"`);
           }
         }
       }

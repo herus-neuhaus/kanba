@@ -28,5 +28,58 @@ export function useProjects() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
   });
 
-  return { ...query, createProject };
+  const updateProject = useMutation({
+    mutationFn: async ({ id, name, description }: { id: string; name: string; description?: string }) => {
+      const { data, error } = await supabase.from('projects').update({ name, description }).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['projects'] }),
+  });
+
+  const deleteProject = useMutation({
+    mutationFn: async (id: string) => {
+      // 1. Get all task IDs for this project
+      const { data: tasks, error: fetchError } = await supabase
+        .from('tasks')
+        .select('id')
+        .eq('project_id', id);
+      
+      if (fetchError) throw fetchError;
+      const taskIds = tasks?.map(t => t.id) || [];
+
+      if (taskIds.length > 0) {
+        // 2. Delete ALL comments associated with these tasks
+        // Supabase/PostgREST delete returns an error if failed
+        const { error: commentsError } = await supabase
+          .from('comments')
+          .delete()
+          .in('task_id', taskIds);
+        
+        if (commentsError) throw commentsError;
+
+        // 3. Delete the tasks themselves
+        const { error: tasksError } = await supabase
+          .from('tasks')
+          .delete()
+          .in('id', taskIds);
+        
+        if (tasksError) throw tasksError;
+      }
+
+      // 4. Finally delete the project
+      const { error: projectError } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', id);
+      
+      if (projectError) throw projectError;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  return { ...query, createProject, updateProject, deleteProject };
 }
