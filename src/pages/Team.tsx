@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Users, UserPlus, Copy, Check, Trash2, Mail, Clock, MoreVertical, Shield, ShieldCheck, UserMinus, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { ProjectAccessDialog } from '@/components/features/ProjectAccessDialog';
 
 export default function Team() {
   const { data: team = [], updateStatus, removeMember } = useTeam();
@@ -23,6 +24,15 @@ export default function Team() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('member');
+  
+  // Project Access Logic
+  const [accessDialogOpen, setAccessDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{ id: string, name: string } | null>(null);
+
+  const handleOpenAccess = (user: { id: string, name: string }) => {
+    setSelectedUser(user);
+    setAccessDialogOpen(true);
+  };
 
   const isOwner = profile?.role === 'owner';
 
@@ -165,8 +175,11 @@ export default function Team() {
                                 </Button>
                              </DropdownMenuTrigger>
                              <DropdownMenuContent align="end" className="border-none shadow-2xl bg-background/95 backdrop-blur-xl p-1 rounded-xl">
-                                <DropdownMenuItem className="text-[10px] font-black uppercase tracking-widest gap-2 cursor-pointer focus:bg-primary/10">
-                                   <ShieldCheck className="h-3 w-3" /> Alterar Permissão
+                                <DropdownMenuItem 
+                                  className="text-[10px] font-black uppercase tracking-widest gap-2 cursor-pointer focus:bg-primary/10"
+                                  onClick={() => handleOpenAccess({ id: m.id, name: m.full_name || '' })}
+                                >
+                                   <ShieldCheck className="h-3 w-3" /> Acessos por Projeto
                                 </DropdownMenuItem>
                                 {m.status !== 'inactive' ? (
                                    <DropdownMenuItem 
@@ -277,6 +290,15 @@ export default function Team() {
           )}
         </CardContent>
       </Card>
+
+      {selectedUser && (
+        <ProjectAccessDialog 
+          profileId={selectedUser.id}
+          profileName={selectedUser.name}
+          isOpen={accessDialogOpen}
+          onOpenChange={setAccessDialogOpen}
+        />
+      )}
     </div>
   );
 }
