@@ -32,7 +32,7 @@ export interface Task {
   agency_id: string;
   title: string;
   description: string | null;
-  status: string | null;
+  column_id: string | null; // Novo campo dinâmico
   priority: 'alta' | 'media' | 'baixa' | null;
   assignee_id: string | null;
   due_date: string | null;
@@ -59,13 +59,22 @@ export interface Comment {
   user?: Profile;
 }
 
-export const KANBAN_COLUMNS = [
-  { id: 'backlog', label: 'Backlog' },
-  { id: 'production', label: 'Em Produção' },
-  { id: 'internal_review', label: 'Revisão Interna' },
-  { id: 'approval', label: 'Em Aprovação' },
-  { id: 'done', label: 'Aprovado / Publicado' },
-] as const;
+export interface ProjectWiki {
+  id: string;
+  project_id: string;
+  content: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KanbanColumn {
+  id: string;
+  project_id: string;
+  title: string;
+  order_index: number;
+  color: string;
+  created_at?: string;
+}
 
 export const DEMAND_TYPES = [
   'Post',
@@ -75,5 +84,4 @@ export const DEMAND_TYPES = [
   'Landing Page'
 ] as const;
 
-export type KanbanStatus = typeof KANBAN_COLUMNS[number]['id'];
 export type DemandType = typeof DEMAND_TYPES[number] | string;

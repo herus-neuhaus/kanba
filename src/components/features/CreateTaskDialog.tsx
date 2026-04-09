@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,27 +8,31 @@ import { useTasks } from '@/hooks/useTasks';
 import { useProjects } from '@/hooks/useProjects';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
-import { KANBAN_COLUMNS, DEMAND_TYPES } from '@/types';
+import { DEMAND_TYPES } from '@/types';
 import { logAndNotify } from '@/lib/notifications';
 import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import type { Profile } from '@/types';
+import type { Profile, KanbanColumn } from '@/types';
 
 interface Props {
   open: boolean;
   onClose: () => void;
   projectId?: string;
-  defaultStatus: string;
+  defaultColumnId?: string;
   team: Profile[];
+  columns: KanbanColumn[];
 }
 
-export function CreateTaskDialog({ open, onClose, projectId, defaultStatus, team }: Props) {
+export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, team, columns }: Props) {
   const { agency } = useAuth();
   const { createTask } = useTasks(projectId);
   const { data: projects = [] } = useProjects();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState(defaultStatus);
+  
+  // Set first column ID as default if none given
+  const defaultCol = defaultColumnId || columns[0]?.id || '';
+  const [columnId, setColumnId] = useState(defaultCol);
+  
   const currentDemandTypes = agency?.demand_types || (DEMAND_TYPES as unknown as string[]);
   const [demandType, setDemandType] = useState<string>(currentDemandTypes[0] || 'Geral');
   const [priority, setPriority] = useState<'alta' | 'media' | 'baixa'>('baixa');
@@ -36,13 +40,24 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultStatus, team
   const [dueDate, setDueDate] = useState('');
   const { toast } = useToast();
 
+  useEffect(() => {
+    if (open) {
+      setColumnId(defaultColumnId || columns[0]?.id || '');
+    }
+  }, [open, defaultColumnId, columns]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!columnId) {
+      toast({ title: 'Aviso', description: 'Por favor, selecione uma coluna.', variant: 'destructive' });
+      return;
+    }
+
     try {
       const newTask = await createTask.mutateAsync({
         title,
         description: description || undefined,
-        status,
+        column_id: columnId,
         priority,
         project_id: projectId,
         assignee_id: assigneeId || undefined,
@@ -102,10 +117,10 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultStatus, team
 
           <Textarea placeholder="Descrição (opcional)" value={description} onChange={e => setDescription(e.target.value)} />
           <div className="grid grid-cols-2 gap-3">
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+            <Select value={columnId} onValueChange={setColumnId}>
+              <SelectTrigger><SelectValue placeholder="Coluna" /></SelectTrigger>
               <SelectContent>
-                {KANBAN_COLUMNS.map(c => <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>)}
+                {columns.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={assigneeId} onValueChange={setAssigneeId}>

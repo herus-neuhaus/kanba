@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { sendWhatsAppNotification } from './evolution';
 
-type NotificationType = 'creation' | 'due_date' | 'overdue' | 'pending_approval' | 'stale_approval' | 'no_update';
+type NotificationType = 'creation' | 'due_date' | 'overdue' | 'pending_approval' | 'stale_approval' | 'no_update' | 'mention';
 
 export async function logAndNotify(taskId: string, type: NotificationType, phone: string, message: string) {
   if (!phone || !message) return;
@@ -48,5 +48,43 @@ export async function logAndNotify(taskId: string, type: NotificationType, phone
     }
   } catch (err) {
     console.error('Failed to send/log notification:', err);
+  }
+}
+
+/**
+ * Envia e registra uma notificação de menção (@) com deduplicação por comment_id.
+ * Garante que o mesmo comentário não gera múltiplos disparos para o mesmo usuário.
+ */
+export async function logAndNotifyMention(
+  commentId: string,
+  taskId: string,
+  phone: string,
+  message: string
+): Promise<void> {
+  if (!phone || !message || !commentId) return;
+
+  // Anti-spam: verifica se já notificamos este usuário para este comentário específico
+  const { data: existing } = await (supabase
+    .from('notification_logs' as any) as any)
+    .select('id')
+    .eq('comment_id', commentId)
+    .eq('recipient_phone', phone)
+    .eq('type', 'mention')
+    .maybeSingle();
+
+  if (existing) return; // Já enviado, pula silenciosamente
+
+  try {
+    const success = await sendWhatsAppNotification(phone, message);
+    if (success) {
+      await (supabase.from('notification_logs' as any) as any).insert({
+        task_id: taskId,
+        comment_id: commentId,
+        type: 'mention',
+        recipient_phone: phone,
+      });
+    }
+  } catch (err) {
+    console.error('Failed to send/log mention notification:', err);
   }
 }

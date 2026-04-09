@@ -69,7 +69,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           task_id?: string | null
-          text: string
+          text?: string
           user_id?: string | null
         }
         Relationships: [
@@ -127,8 +127,44 @@ export type Database = {
           },
         ]
       }
+      kanban_columns: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          order_index: number
+          project_id: string
+          title: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          order_index?: number
+          project_id: string
+          title: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          order_index?: number
+          project_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kanban_columns_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_logs: {
         Row: {
+          comment_id: string | null
           id: string
           recipient_phone: string
           sent_at: string | null
@@ -136,6 +172,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          comment_id?: string | null
           id?: string
           recipient_phone: string
           sent_at?: string | null
@@ -143,6 +180,7 @@ export type Database = {
           type: string
         }
         Update: {
+          comment_id?: string | null
           id?: string
           recipient_phone?: string
           sent_at?: string | null
@@ -150,6 +188,13 @@ export type Database = {
           type?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notification_logs_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notification_logs_task_id_fkey"
             columns: ["task_id"]
@@ -197,6 +242,77 @@ export type Database = {
           },
         ]
       }
+      project_permissions: {
+        Row: {
+          created_at: string | null
+          id: string
+          permission_level: string
+          profile_id: string
+          project_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          permission_level: string
+          profile_id: string
+          project_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          permission_level?: string
+          profile_id?: string
+          project_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_permissions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_permissions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_wikis: {
+        Row: {
+          content: Json
+          created_at: string
+          id: string
+          project_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          id?: string
+          project_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          id?: string
+          project_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_wikis_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: true
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           agency_id: string
@@ -237,6 +353,7 @@ export type Database = {
           agency_id: string
           assignee_id: string | null
           checklist: Json | null
+          column_id: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
@@ -245,13 +362,13 @@ export type Database = {
           last_notified_at: string | null
           priority: string | null
           project_id: string | null
-          status: string | null
           title: string
         }
         Insert: {
           agency_id: string
           assignee_id?: string | null
           checklist?: Json | null
+          column_id?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -260,13 +377,13 @@ export type Database = {
           last_notified_at?: string | null
           priority?: string | null
           project_id?: string | null
-          status?: string | null
           title: string
         }
         Update: {
           agency_id?: string
           assignee_id?: string | null
           checklist?: Json | null
+          column_id?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -275,7 +392,6 @@ export type Database = {
           last_notified_at?: string | null
           priority?: string | null
           project_id?: string | null
-          status?: string | null
           title?: string
         }
         Relationships: [
@@ -294,6 +410,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tasks_column_id_fkey"
+            columns: ["column_id"]
+            isOneToOne: false
+            referencedRelation: "kanban_columns"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
@@ -309,6 +432,7 @@ export type Database = {
     Functions: {
       get_complete_schema: { Args: never; Returns: Json }
       get_user_agency_id: { Args: never; Returns: string }
+      get_user_role: { Args: never; Returns: string }
       is_agency_admin_of: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {

@@ -22,7 +22,7 @@ export function useTasks(projectId?: string) {
   });
 
   const createTask = useMutation({
-    mutationFn: async (task: { title: string; project_id?: string; status?: string; priority?: string; description?: string; assignee_id?: string; due_date?: string; labels?: string[] }) => {
+    mutationFn: async (task: { title: string; project_id?: string; column_id?: string; priority?: string; description?: string; assignee_id?: string; due_date?: string; labels?: string[] }) => {
       if (!agency) throw new Error('No agency');
       const { data, error } = await supabase.from('tasks').insert({ ...task, agency_id: agency.id }).select().single();
       if (error) throw error;

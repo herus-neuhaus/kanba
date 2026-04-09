@@ -3,54 +3,70 @@ import { useParams, Link } from 'react-router-dom';
 import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useProjects } from '@/hooks/useProjects';
-import { KANBAN_COLUMNS } from '@/types';
+import { useColumns } from '@/hooks/useColumns';
 import { KanbanColumn } from '@/components/features/KanbanColumn';
 import { TaskDetailModal } from '@/components/features/TaskDetailModal';
 import { CreateTaskDialog } from '@/components/features/CreateTaskDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo } from 'lucide-react';
+import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo, BookOpen } from 'lucide-react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { isPast } from 'date-fns';
 import { logAndNotify } from '@/lib/notifications';
-import type { Task } from '@/types';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ProjectWiki } from '@/components/features/ProjectWiki';
 
 export default function KanbanBoard() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: projects = [] } = useProjects();
   const { data: tasks = [], updateTask } = useTasks(projectId);
+  const { data: columns = [], createColumn, updateColumn, deleteColumn } = useColumns(projectId);
   const { data: team = [] } = useTeam();
   
   const currentClient = projects.find(p => p.id === projectId);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createStatus, setCreateStatus] = useState('backlog');
+  const [createColumnId, setCreateColumnId] = useState<string | undefined>(undefined);
 
   const selectedTask = tasks.find(t => t.id === selectedTaskId) || null;
 
   const totalTasks = tasks.length;
-  const inProgressTasks = tasks.filter(t => t.status !== 'backlog' && t.status !== 'done').length;
+  // If no columns yet, we can't properly filter backlog/done
+  const firstColId = columns[0]?.id;
+  const lastColId = columns[columns.length - 1]?.id;
+
+  const inProgressTasks = tasks.filter(t => t.column_id !== firstColId && t.column_id !== lastColId).length;
   const overdueTasks = tasks.filter(t => 
     t.due_date && 
     isPast(new Date(t.due_date)) && 
-    t.status !== 'done'
+    t.column_id !== lastColId
   ).length;
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
     const taskId = result.draggableId;
-    const newStatus = result.destination.droppableId;
+    const newColumnId = result.destination.droppableId;
     const task = tasks.find(t => t.id === taskId);
     
-    updateTask.mutate({ id: taskId, status: newStatus });
+    updateTask.mutate({ id: taskId, column_id: newColumnId });
 
-    // Notification for "Em Aprovação"
-    if (newStatus === 'approval' && task && task.status !== 'approval') {
+    // Notification for "Em Aprovação" logic based on index (assuming index 3 or just checking title for legacy logic)
+    const destCol = columns.find(c => c.id === newColumnId);
+    if (destCol?.title?.toLowerCase().includes('aprov') && task && task.column_id !== newColumnId) {
       const assignee = team.find(m => m.id === task.assignee_id);
       if (assignee?.phone) {
-        const msg = `✅ *Demanda em Aprovação*\n\nOlá ${assignee.full_name}!\nA demanda *${task.title}* do cliente *${currentClient?.name || 'Agência'}* foi movida para *Em Aprovação*.`;
+        const msg = `✅ *Demanda em ${destCol.title}*\n\nOlá ${assignee.full_name}!\nA demanda *${task.title}* do cliente *${currentClient?.name || 'Agência'}* foi movida para *${destCol.title}*.`;
         logAndNotify(taskId, 'pending_approval', assignee.phone, msg);
       }
     }
+  };
+
+  const handleAddColumn = () => {
+    const nextOrder = columns.length > 0 ? Math.max(...columns.map(c => c.order_index)) + 1 : 0;
+    createColumn.mutate({
+      title: 'Nova Coluna',
+      color: 'bg-muted',
+      order_index: nextOrder
+    });
   };
 
   return (
@@ -64,7 +80,7 @@ export default function KanbanBoard() {
                  <FolderKanban className="h-3 w-3" /> Clientes
                </Link>
                <ChevronRight className="h-3 w-3" />
-               <span className="text-foreground">Quadro Kanban</span>
+               <span className="text-foreground">Painel do Cliente</span>
             </div>
             <h1 className="text-3xl font-black tracking-tight text-foreground">
               {currentClient?.name || 'Carregando...'}
@@ -89,26 +105,56 @@ export default function KanbanBoard() {
                  <span className="text-[10px] uppercase font-bold text-destructive/70 tracking-tight">Atrasadas</span>
               </div>
             )}
-            <Button size="sm" className="ml-2 shadow-lg" onClick={() => { setCreateStatus('backlog'); setCreateOpen(true); }}>
+            <Button size="sm" className="ml-2 shadow-lg" onClick={() => { setCreateColumnId(firstColId); setCreateOpen(true); }}>
               <Plus className="h-4 w-4 mr-1.5" /> Nova Demanda
             </Button>
           </div>
         </div>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex gap-4 overflow-x-auto pb-4">
-          {KANBAN_COLUMNS.map(col => (
-            <KanbanColumn
-              key={col.id}
-              column={col}
-              tasks={tasks.filter(t => (t.status || 'backlog') === col.id)}
-              onTaskClick={(task) => setSelectedTaskId(task.id)}
-              onAddTask={() => { setCreateStatus(col.id); setCreateOpen(true); }}
-            />
-          ))}
-        </div>
-      </DragDropContext>
+      <Tabs defaultValue="kanban" className="w-full">
+        <TabsList className="mb-6 bg-muted/50 w-full justify-start rounded-xl p-1 h-auto overflow-x-auto">
+          <TabsTrigger value="kanban" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <FolderKanban className="h-4 w-4" />
+            <span className="font-semibold">Quadro Kanban</span>
+          </TabsTrigger>
+          <TabsTrigger value="wiki" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <BookOpen className="h-4 w-4" />
+            <span className="font-semibold">Wiki / Ideias</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="kanban" className="mt-0 outline-none">
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="flex gap-4 overflow-x-auto pb-4 items-start min-h-[50vh]">
+              {columns.map(col => (
+                <KanbanColumn
+                  key={col.id}
+                  column={col}
+                  tasks={tasks.filter(t => t.column_id === col.id)}
+                  onTaskClick={(task) => setSelectedTaskId(task.id)}
+                  onAddTask={() => { setCreateColumnId(col.id); setCreateOpen(true); }}
+                  onDeleteColumn={(id) => deleteColumn.mutate(id)}
+                  onUpdateColumn={(id, title, color) => updateColumn.mutate({ id, title, color })}
+                />
+              ))}
+              
+              <Button
+                variant="outline"
+                className="flex-shrink-0 w-72 h-12 border-dashed flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground"
+                onClick={handleAddColumn}
+              >
+                <Plus className="h-4 w-4" />
+                Adicionar Coluna
+              </Button>
+            </div>
+          </DragDropContext>
+        </TabsContent>
+
+        <TabsContent value="wiki" className="mt-0 outline-none">
+          <ProjectWiki projectId={projectId} />
+        </TabsContent>
+      </Tabs>
 
       {selectedTask && (
         <TaskDetailModal
@@ -116,6 +162,7 @@ export default function KanbanBoard() {
           team={team}
           open={!!selectedTaskId}
           onClose={() => setSelectedTaskId(null)}
+          columns={columns}
         />
       )}
 
@@ -123,8 +170,9 @@ export default function KanbanBoard() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         projectId={projectId}
-        defaultStatus={createStatus}
+        defaultColumnId={createColumnId}
         team={team}
+        columns={columns}
       />
     </div>
   );
