@@ -122,3 +122,17 @@
 .premium-phone-container .react-international-phone-input {
   @apply shadow-inner;
 }
+
+/* Blinda os ícones do Excalidraw contra o reset do Tailwind */
+.excalidraw svg {
+  display: inline-block !important;
+  max-width: initial !important;
+  width: initial !important;
+  height: initial !important;
+}
+
+/* Garante que o container interno ocupe 100% do espaço da div pai */
+.excalidraw-container {
+  width: 100%;
+  height: 100%;
+}

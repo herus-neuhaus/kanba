@@ -2,7 +2,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 const EVOLUTION_BASE_URL = import.meta.env.VITE_EVOLUTION_BASE_URL || 'https://evo.overflyia.com.br';
 
-export async function sendWhatsAppNotification(phone: string, message: string): Promise<boolean> {
+export async function sendWhatsAppNotification(phone: string, message: string, agencyId: string): Promise<boolean> {
   try {
     const apiKey = import.meta.env.VITE_EVOLUTION_API_KEY;
     if (!apiKey) {
@@ -13,7 +13,7 @@ export async function sendWhatsAppNotification(phone: string, message: string): 
     const { data: agency } = await supabase
       .from('agencies')
       .select('evolution_instance_name, whatsapp_connected')
-      .limit(1)
+      .eq('id', agencyId)
       .single();
 
     if (!agency?.whatsapp_connected || !agency?.evolution_instance_name) {

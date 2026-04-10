@@ -18,4 +18,8 @@ export default defineConfig(({ mode }) => ({
     },
     dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
+  define: {
+    'process.env': {},
+    "process.env.IS_PREACT": JSON.stringify("false"),
+  },
 }));

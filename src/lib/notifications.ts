@@ -34,8 +34,16 @@ export async function logAndNotify(taskId: string, type: NotificationType, phone
      if (recent) return;
   }
 
+  // Get the task to find the agencyId
+  const { data: taskData } = await (supabase.from('tasks' as any) as any)
+    .select('agency_id')
+    .eq('id', taskId)
+    .single();
+
+  if (!taskData?.agency_id) return;
+
   try {
-    const success = await sendWhatsAppNotification(phone, message);
+    const success = await sendWhatsAppNotification(phone, message, taskData.agency_id);
     if (success) {
       await (supabase.from('notification_logs' as any) as any).insert({
         task_id: taskId,
@@ -74,8 +82,16 @@ export async function logAndNotifyMention(
 
   if (existing) return; // Já enviado, pula silenciosamente
 
+  // Get the task to find the agencyId
+  const { data: taskData } = await (supabase.from('tasks' as any) as any)
+    .select('agency_id')
+    .eq('id', taskId)
+    .single();
+
+  if (!taskData?.agency_id) return;
+
   try {
-    const success = await sendWhatsAppNotification(phone, message);
+    const success = await sendWhatsAppNotification(phone, message, taskData.agency_id);
     if (success) {
       await (supabase.from('notification_logs' as any) as any).insert({
         task_id: taskId,
