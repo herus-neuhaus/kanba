@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
+import { useTeam } from '@/hooks/useTeam';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +28,7 @@ export default function Dashboard() {
   const { agency } = useAuth();
   const { data: projects = [] } = useProjects();
   const { data: tasks = [] } = useTasks();
+  const { data: team = [] } = useTeam();
 
   useEffect(() => {
     if (agency?.id && !sessionStorage.getItem('automationsChecked')) {
@@ -38,21 +40,21 @@ export default function Dashboard() {
   const now = new Date();
   
   // Categorize Tasks
-  const overdueTasks = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isToday(parseISO(t.due_date)) && t.status !== 'done');
-  const todayTasks = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date)) && t.status !== 'done');
-  const doneTasks = tasks.filter(t => t.status === 'done');
-  const inProgressTasks = tasks.filter(t => t.status !== 'backlog' && t.status !== 'done');
-  const approvalTasks = tasks.filter(t => t.status === 'approval');
+  const overdueTasks = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isToday(parseISO(t.due_date)) && (t as any).status !== 'done');
+  const todayTasks = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date)) && (t as any).status !== 'done');
+  const doneTasks = tasks.filter(t => (t as any).status === 'done');
+  const inProgressTasks = tasks.filter(t => (t as any).status !== 'backlog' && (t as any).status !== 'done');
+  const approvalTasks = tasks.filter(t => (t as any).status === 'approval');
   const staleTasks = tasks.filter(t => {
-     if (t.status === 'done') return false;
+     if ((t as any).status === 'done') return false;
      const lastAction = (t as any).last_notified_at ? new Date((t as any).last_notified_at) : (t.created_at ? new Date(t.created_at) : now);
-     return differenceInDays(now, lastAction) >= 2 && t.status !== 'approval';
+     return differenceInDays(now, lastAction) >= 2 && (t as any).status !== 'approval';
   });
 
   const overallProgress = tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
 
   const stats = [
-    { label: 'Clientes', value: projects.length, icon: FolderKanban, color: 'text-primary', bg: 'bg-primary/5' },
+    { label: 'Projetos', value: projects.length, icon: FolderKanban, color: 'text-primary', bg: 'bg-primary/5' },
     { label: 'Em Produção', value: inProgressTasks.length, icon: Activity, color: 'text-blue-500', bg: 'bg-blue-500/5' },
     { label: 'Atrasadas', value: overdueTasks.length, icon: AlertCircle, color: 'text-destructive', bg: 'bg-destructive/5' },
     { label: 'Hoje', value: todayTasks.length, icon: Clock, color: 'text-warning', bg: 'bg-warning/5' },
@@ -127,13 +129,13 @@ export default function Dashboard() {
                           </p>
                           <h4 className="font-extrabold text-base tracking-tight">{t.title}</h4>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground/80 font-medium">
-                             <span className="flex items-center gap-1"><User className="h-3 w-3" /> {t.assignee?.full_name || 'Sem responsável'}</span>
+                             <span className="flex items-center gap-1"><User className="h-3 w-3" /> {(t.assignee_ids && t.assignee_ids.length > 0) ? t.assignee_ids.map(id => team.find(m => m.id === id)?.full_name?.split(' ')[0]).filter(Boolean).join(', ') : 'Sem responsável'}</span>
                              <span className="h-1 w-1 rounded-full bg-border" />
                              <span>Prazo: {t.due_date}</span>
                           </div>
                         </div>
                       </div>
-                      <Link to={`/projects/${t.project_id}`}>
+                      <Link to={`/projetos/${t.project_id}/kanban`}>
                         <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 font-bold text-[10px] uppercase">Ver No Quadro</Button>
                       </Link>
                     </div>
@@ -151,11 +153,11 @@ export default function Dashboard() {
                         </p>
                         <h4 className="font-extrabold text-base tracking-tight">{t.title}</h4>
                         <div className="flex items-center gap-3 text-xs text-muted-foreground/80 font-medium">
-                           <span className="flex items-center gap-1"><User className="h-3 w-3" /> {t.assignee?.full_name || 'Sem responsável'}</span>
+                           <span className="flex items-center gap-1"><User className="h-3 w-3" /> {(t.assignee_ids && t.assignee_ids.length > 0) ? t.assignee_ids.map(id => team.find(m => m.id === id)?.full_name?.split(' ')[0]).filter(Boolean).join(', ') : 'Sem responsável'}</span>
                         </div>
                       </div>
                     </div>
-                    <Link to={`/projects/${t.project_id}`}>
+                    <Link to={`/projetos/${t.project_id}/kanban`}>
                       <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 font-bold text-[10px] uppercase text-warning">Ver No Quadro</Button>
                     </Link>
                   </div>
@@ -222,24 +224,24 @@ export default function Dashboard() {
         {/* Sidebar Content Column */}
         <div className="lg:col-span-4 space-y-6">
           
-          {/* Clientes Status */}
+          {/* Projetos Status */}
           <Card className="border-none shadow-lg ring-1 ring-border/50 bg-background/50">
             <CardHeader className="pb-4 border-b">
               <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center justify-between">
-                 Saúde dos Clientes
+                 Saúde dos Projetos
                  <ChevronRight className="h-4 w-4 text-muted-foreground/30" />
               </CardTitle>
             </CardHeader>
             <CardContent className="px-2 pt-2 pb-4">
-              {projects.length === 0 && <p className="p-8 text-center text-xs text-muted-foreground italic">Nenhum cliente ativo.</p>}
+              {projects.length === 0 && <p className="p-8 text-center text-xs text-muted-foreground italic">Nenhum projeto ativo.</p>}
               <div className="space-y-0.5">
                 {projects.slice(0, 8).map(p => {
                   const clientTasks = tasks.filter(t => t.project_id === p.id);
-                  const activeT = clientTasks.filter(t => t.status !== 'done').length;
-                  const overdueT = clientTasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && t.status !== 'done').length;
+                  const activeT = clientTasks.filter(t => (t as any).status !== 'done').length;
+                  const overdueT = clientTasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && (t as any).status !== 'done').length;
 
                   return (
-                    <Link to={`/projects/${p.id}`} key={p.id} className="group flex items-center justify-between p-3.5 rounded-xl hover:bg-primary/[0.03] transition-all">
+                    <Link to={`/projetos/${p.id}/kanban`} key={p.id} className="group flex items-center justify-between p-3.5 rounded-xl hover:bg-primary/[0.03] transition-all">
                       <div className="space-y-1">
                         <p className="font-extrabold text-sm group-hover:text-primary transition-colors">{p.name}</p>
                         <div className="flex items-center gap-3">

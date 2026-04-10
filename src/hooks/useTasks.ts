@@ -12,7 +12,7 @@ export function useTasks(projectId?: string) {
     queryKey: ['tasks', agency?.id, projectId],
     queryFn: async () => {
       if (!agency) return [];
-      let q = supabase.from('tasks').select('*, project:projects(name), assignee:profiles!tasks_assignee_id_fkey(id, full_name, phone)').eq('agency_id', agency.id);
+      let q = supabase.from('tasks').select('*, project:projects(name)').eq('agency_id', agency.id);
       if (projectId) q = q.eq('project_id', projectId);
       const { data, error } = await q.order('created_at', { ascending: false });
       if (error) throw error;
@@ -22,7 +22,7 @@ export function useTasks(projectId?: string) {
   });
 
   const createTask = useMutation({
-    mutationFn: async (task: { title: string; project_id?: string; column_id?: string; priority?: string; description?: string; assignee_id?: string; due_date?: string; labels?: string[] }) => {
+    mutationFn: async (task: { title: string; project_id?: string; column_id?: string; priority?: string; description?: string; assignee_ids?: string[]; due_date?: string; labels?: string[] }) => {
       if (!agency) throw new Error('No agency');
       const { data, error } = await supabase.from('tasks').insert({ ...task, agency_id: agency.id }).select().single();
       if (error) throw error;

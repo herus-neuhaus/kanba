@@ -5,9 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Plus, FolderKanban, MoreVertical, Edit2, Trash2, LayoutDashboard } from 'lucide-react';
+import { Plus, FolderKanban, MoreVertical, Edit2, Trash2, LayoutDashboard, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+
+const PLAN_LIMITS: Record<string, number> = {
+  free: 2,
+  pro: 10,
+  enterprise: 9999
+};
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +40,12 @@ export default function Projects() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   
+  const { agency } = useAuth();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  
+  const limit = PLAN_LIMITS[agency?.plan?.toLowerCase() || 'free'] || 2;
+  const isOverLimit = projects.length >= limit;
+  
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const { toast } = useToast();
@@ -45,7 +58,7 @@ export default function Projects() {
       setOpen(false);
       setName('');
       setDescription('');
-      toast({ title: 'Cliente criado!' });
+      toast({ title: 'Projeto criado!' });
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     }
@@ -64,7 +77,7 @@ export default function Projects() {
       setEditingProject(null);
       setName('');
       setDescription('');
-      toast({ title: 'Cliente atualizado!' });
+      toast({ title: 'Projeto atualizado!' });
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     }
@@ -74,7 +87,7 @@ export default function Projects() {
     if (!deleteId) return;
     try {
       await deleteProject.mutateAsync(deleteId);
-      toast({ title: 'Cliente deletado' });
+      toast({ title: 'Projeto deletado' });
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally {
@@ -93,28 +106,26 @@ export default function Projects() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Meus Clientes</h1>
-          <p className="text-muted-foreground">Gerencie seus clientes e as demandas de cada um.</p>
+          <h1 className="text-2xl font-bold tracking-tight">Meus Projetos</h1>
+          <p className="text-muted-foreground">Gerencie seus projetos e as demandas de cada um ({projects.length}/{limit}).</p>
         </div>
+        <Button size="lg" className="shadow-sm" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>
+          <Plus className="h-5 w-5 mr-2" /> Novo Projeto
+        </Button>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button size="lg" className="shadow-sm">
-              <Plus className="h-5 w-5 mr-2" /> Novo Cliente
-            </Button>
-          </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>Cadastrar Novo Cliente</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>Cadastrar Novo Projeto</DialogTitle></DialogHeader>
             <form onSubmit={handleCreate} className="space-y-4 pt-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Nome do Cliente</label>
-                <Input placeholder="Ex: Cliente Redes Sociais" value={name} onChange={e => setName(e.target.value)} required />
+                <label className="text-sm font-medium">Nome do Projeto</label>
+                <Input placeholder="Ex: Projeto E-commerce Beta" value={name} onChange={e => setName(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Descrição / Observações</label>
-                <Textarea placeholder="Descreva brevemente o perfil ou demandas do cliente..." value={description} onChange={e => setDescription(e.target.value)} rows={4} />
+                <Textarea placeholder="Descreva brevemente o perfil ou demandas do projeto..." value={description} onChange={e => setDescription(e.target.value)} rows={4} />
               </div>
               <Button type="submit" className="w-full" disabled={createProject.isPending}>
-                {createProject.isPending ? 'Cadastrando...' : 'Criar Cliente'}
+                {createProject.isPending ? 'Cadastrando...' : 'Criar Projeto'}
               </Button>
             </form>
           </DialogContent>
@@ -127,9 +138,9 @@ export default function Projects() {
             <div className="bg-muted p-4 rounded-full mb-4">
               <FolderKanban className="h-10 w-10 text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Nenhum cliente encontrado</h2>
-            <p className="text-muted-foreground max-w-xs mb-6">Comece cadastrando seu primeiro cliente para organizar suas tarefas.</p>
-            <Button variant="outline" onClick={() => setOpen(true)}>Cadastrar cliente agora</Button>
+            <h2 className="text-xl font-semibold mb-2">Nenhum projeto encontrado</h2>
+            <p className="text-muted-foreground max-w-xs mb-6">Comece cadastrando seu primeiro projeto para organizar suas tarefas.</p>
+            <Button variant="outline" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>Cadastrar projeto agora</Button>
           </CardContent>
         </Card>
       ) : (
@@ -159,14 +170,14 @@ export default function Projects() {
                 </div>
                 <h3 className="font-bold text-lg mb-2 group-hover:text-primary transition-colors">{p.name}</h3>
                 <p className="text-sm text-muted-foreground line-clamp-3 min-h-[3rem] mb-6">
-                  {p.description || 'Nenhuma descrição fornecida para este cliente.'}
+                  {p.description || 'Nenhuma descrição fornecida para este projeto.'}
                 </p>
                 <div className="flex items-center justify-between mt-auto">
                   <div className="bg-muted px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                     Ativo
                   </div>
                   <Button 
-                    onClick={() => navigate(`/projects/${p.id}`)}
+                    onClick={() => navigate(`/projetos/${p.id}/kanban`)}
                     className="gap-2 font-medium"
                   >
                     <LayoutDashboard className="h-4 w-4" /> Abrir Kanban
@@ -181,7 +192,7 @@ export default function Projects() {
       {/* Edit Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Editar Cliente</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Editar Projeto</DialogTitle></DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 pt-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Nome</label>
@@ -205,9 +216,9 @@ export default function Projects() {
       <AlertDialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza que deseja deletar este cliente?</AlertDialogTitle>
+            <AlertDialogTitle>Tem certeza que deseja deletar este projeto?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. Isso excluirá permanentemente o cliente e todas as demandas (tarefas) associadas a ele.
+              Esta ação não pode ser desfeita. Isso excluirá permanentemente o projeto e todas as demandas (tarefas) associadas a ele.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -218,6 +229,36 @@ export default function Projects() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Upgrade Paywall Dialog */}
+      <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
+        <DialogContent className="sm:max-w-md text-center">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-black mx-auto mt-2">Limite Atingido</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+               <AlertCircle className="h-8 w-8 text-primary" />
+            </div>
+            <p className="text-muted-foreground font-medium px-4">
+              Sua agência atingiu o limite de <strong className="text-foreground">{limit} projetos</strong> do plano atual (<span className="uppercase text-primary font-bold">{agency?.plan || 'Free'}</span>).
+            </p>
+            <div className="bg-muted/50 p-4 rounded-xl text-sm font-bold text-foreground mx-4">
+              Dê o próximo passo! Faça um upgrade para continuar criando novos projetos e escalando suas operações sem limites.
+            </div>
+          </div>
+          <DialogFooter className="flex-col sm:flex-col gap-2 w-full">
+            <Button className="w-full font-bold shadow-lg shadow-primary/20" size="lg" onClick={() => {
+                 setUpgradeOpen(false);
+            }}>
+               Fazer Upgrade Agora 🚀
+            </Button>
+            <Button variant="ghost" className="w-full text-muted-foreground" onClick={() => setUpgradeOpen(false)}>
+               Talvez mais tarde
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

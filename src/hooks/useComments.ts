@@ -64,7 +64,7 @@ export function useComments(taskId: string | null) {
           `💬 *Você foi mencionado!*\n\n` +
           `👤 *Por:* ${authorName}\n` +
           `📋 *Tarefa:* ${task.title}\n` +
-          `🗂️ *Cliente:* ${projectName}\n\n` +
+          `🗂️ *Projeto:* ${projectName}\n\n` +
           `_"${text.replace(/_/g, ' ')}"_\n\n` +
           `Acesse o Kanba para responder.`;
 

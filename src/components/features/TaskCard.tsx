@@ -19,7 +19,7 @@ const labelColors: Record<string, string> = {
   social: 'bg-accent/20 text-accent',
 };
 export function TaskCard({ task, isDragging }: Props) {
-  const isOverdue = task.due_date && isPast(new Date(task.due_date)) && task.status !== 'done';
+  const isOverdue = task.due_date && isPast(new Date(task.due_date)) && (task as any).status !== 'done';
 
   const priorityInfo: Record<string, { border: string, text: string, label: string }> = {
     alta: { border: 'border-l-destructive', text: 'text-destructive', label: 'Alta' },
@@ -76,14 +76,14 @@ export function TaskCard({ task, isDragging }: Props) {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
-             {task.assignee && (
-                <Avatar className="h-6 w-6 border border-background shadow-sm ring-1 ring-muted transition-transform group-hover:scale-110">
-                  <AvatarFallback className="bg-primary/5 text-primary text-[9px] font-black">
-                    {task.assignee.full_name?.charAt(0)?.toUpperCase() || '?'}
+          <div className="flex items-center gap-1">
+             {task.assignees?.map((assignee, i) => (
+                <Avatar key={assignee.id} className={cn("h-6 w-6 border border-background shadow-sm ring-1 ring-muted transition-transform group-hover:scale-110", i > 0 && "-ml-2")}>
+                  <AvatarFallback className="bg-primary/5 text-primary text-[9px] font-black" title={assignee.full_name || 'Sem nome'}>
+                    {assignee.full_name?.charAt(0)?.toUpperCase() || '?'}
                   </AvatarFallback>
                 </Avatar>
-             )}
+             ))}
           </div>
         </div>
       </CardContent>

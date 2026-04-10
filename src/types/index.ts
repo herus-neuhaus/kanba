@@ -34,12 +34,12 @@ export interface Task {
   description: string | null;
   column_id: string | null; // Novo campo dinâmico
   priority: 'alta' | 'media' | 'baixa' | null;
-  assignee_id: string | null;
+  assignee_ids: string[] | null;
   due_date: string | null;
   labels: string[] | null;
   checklist: ChecklistItem[] | null;
   created_at: string | null;
-  assignee?: Profile;
+  assignees?: Profile[];
   project?: Project;
   comments?: Comment[];
 }

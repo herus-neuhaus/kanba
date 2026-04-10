@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { DEMAND_TYPES } from '@/types';
 import { logAndNotify } from '@/lib/notifications';
 import { format } from 'date-fns';
+import { X } from 'lucide-react';
 import type { Profile, KanbanColumn } from '@/types';
 
 interface Props {
@@ -36,7 +37,7 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
   const currentDemandTypes = agency?.demand_types || (DEMAND_TYPES as unknown as string[]);
   const [demandType, setDemandType] = useState<string>(currentDemandTypes[0] || 'Geral');
   const [priority, setPriority] = useState<'alta' | 'media' | 'baixa'>('baixa');
-  const [assigneeId, setAssigneeId] = useState('');
+  const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
   const { toast } = useToast();
 
@@ -52,6 +53,10 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
       toast({ title: 'Aviso', description: 'Por favor, selecione uma coluna.', variant: 'destructive' });
       return;
     }
+    if (assigneeIds.length === 0) {
+      toast({ title: 'Aviso', description: 'Por favor, atribua pelo menos um responsável.', variant: 'destructive' });
+      return;
+    }
 
     try {
       const newTask = await createTask.mutateAsync({
@@ -60,23 +65,25 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
         column_id: columnId,
         priority,
         project_id: projectId,
-        assignee_id: assigneeId || undefined,
+        assignee_ids: assigneeIds,
         due_date: dueDate || undefined,
         labels: [demandType],
       });
 
-      // Notification
-      if (assigneeId && newTask) {
-        const assignee = team.find(m => m.id === assigneeId);
-        const project = projects.find(p => p.id === projectId);
-        if (assignee?.phone) {
-          const dateStr = dueDate ? format(new Date(dueDate), 'dd/MM/yyyy') : 'Sem data';
-          const msg = `📋 *Nova Demanda Recebida*\n\nOlá ${assignee.full_name}!\nVocê recebeu uma nova demanda: *${title}*\nCliente: *${project?.name || 'Agência'}*\nPrazo: *${dateStr}*\n\nConfira no painel!`;
-          logAndNotify(newTask.id, 'creation', assignee.phone, msg);
+      // Notifications for all assignees
+      if (assigneeIds.length > 0 && newTask) {
+        for (const aId of assigneeIds) {
+          const assignee = team.find(m => m.id === aId);
+          const project = projects.find(p => p.id === projectId);
+          if (assignee?.phone) {
+            const dateStr = dueDate ? format(new Date(dueDate), 'dd/MM/yyyy') : 'Sem data';
+            const msg = `📋 *Nova Demanda Recebida*\n\nOlá ${assignee.full_name}!\nVocê foi atribuído a uma demanda: *${title}*\nProjeto: *${project?.name || 'Agência'}*\nPrazo: *${dateStr}*\n\nConfira no painel!`;
+            logAndNotify(newTask.id, 'creation', assignee.phone, msg);
+          }
         }
       }
 
-      setTitle(''); setDescription(''); setAssigneeId(''); setDueDate('');
+      setTitle(''); setDescription(''); setAssigneeIds([]); setDueDate('');
       onClose();
       toast({ title: 'Demanda criada!' });
     } catch (err: any) {
@@ -123,13 +130,40 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
                 {columns.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Select value={assigneeId} onValueChange={setAssigneeId}>
-              <SelectTrigger><SelectValue placeholder="Responsável" /></SelectTrigger>
-              <SelectContent>
-                {team.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+
+            <div className="space-y-2">
+              <Select onValueChange={(val) => {
+                if (!assigneeIds.includes(val)) {
+                  setAssigneeIds(prev => [...prev, val]);
+                }
+              }} value="">
+                <SelectTrigger><SelectValue placeholder="Atribuir Responsável..." /></SelectTrigger>
+                <SelectContent>
+                  {team.filter(m => !assigneeIds.includes(m.id)).map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
+          
+          {assigneeIds.length > 0 && (
+            <div className="flex flex-wrap gap-2 py-1">
+              {assigneeIds.map(id => {
+                const member = team.find(m => m.id === id);
+                if (!member) return null;
+                return (
+                  <div key={id} className="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-xs font-semibold shadow-sm transition-all hover:bg-primary/20">
+                    <span>{member.full_name}</span>
+                    <button type="button" onClick={() => setAssigneeIds(prev => prev.filter(aid => aid !== id))} className="rounded-full hover:bg-primary/30 p-0.5 transition-colors">
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
           <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
           <Button type="submit" className="w-full" disabled={createTask.isPending}>Criar Demanda</Button>
         </form>

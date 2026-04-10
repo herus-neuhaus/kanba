@@ -15,7 +15,7 @@ import LogoImg from '@/img/K logo 512z512.png';
 
 const menuItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Clientes', url: '/projects', icon: FolderKanban },
+  { title: 'Projetos', url: '/projetos', icon: FolderKanban },
   { title: 'Equipe', url: '/team', icon: Users },
   { title: 'Configurações', url: '/settings', icon: Settings },
 ];

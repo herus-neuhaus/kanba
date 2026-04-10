@@ -15,6 +15,9 @@ import Join from "@/pages/Join";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/NotFound";
 import { AuthLoader } from "@/components/layout/AuthLoader";
+import { ClientLayout } from "@/components/layout/ClientLayout";
+import ClientDashboard from "@/pages/ClientDashboard";
+import ClientKanbanBoard from "@/pages/ClientKanbanBoard";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +46,30 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   if (!agency && !loading) return <Navigate to="/onboarding" replace />;
+
+  if (profile?.role === 'client') {
+    return <Navigate to="/cliente/dashboard" replace />;
+  }
+
   return <DashboardLayout>{children}</DashboardLayout>;
+}
+
+function ClientRoute({ children }: { children: React.ReactNode }) {
+  const { session, profile, agency, loading } = useAuth();
+  if (loading && (!session || !profile)) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="animate-spin h-8 w-8 border-2 border-primary border-t-transparent rounded-full" /></div>;
+  if (!session) return <Navigate to="/auth" replace />;
+
+  if (profile?.status === 'inactive') {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (!agency && !loading) return <Navigate to="/onboarding" replace />;
+  
+  if (profile?.role !== 'client') {
+    return <Navigate to="/" replace />;
+  }
+
+  return <ClientLayout>{children}</ClientLayout>;
 }
 
 function AppRoutes() {
@@ -53,10 +79,15 @@ function AppRoutes() {
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/join/:token" element={<Join />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
-      <Route path="/projects/:projectId" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
+      <Route path="/projetos" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+      <Route path="/projetos/:projectId/kanban" element={<ProtectedRoute><KanbanBoard /></ProtectedRoute>} />
       <Route path="/team" element={<ProtectedRoute><Team /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      
+      {/* Rotas de Cliente */}
+      <Route path="/cliente/dashboard" element={<ClientRoute><ClientDashboard /></ClientRoute>} />
+      <Route path="/cliente/projetos/:projectId/kanban" element={<ClientRoute><ClientKanbanBoard /></ClientRoute>} />
+      
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWhatsappStatus } from '@/hooks/useWhatsappStatus';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,7 +24,8 @@ import {
   MessageCircle,
   QrCode,
   LogOut,
-  RefreshCw
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -41,6 +42,8 @@ export default function Settings() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [waInstanceLoading, setWaInstanceLoading] = useState(false);
 
+  const [isDemandLoading, setIsDemandLoading] = useState(false);
+
   // Profile Form
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
@@ -49,6 +52,21 @@ export default function Settings() {
   const [agencyName, setAgencyName] = useState(agency?.name || '');
   const [demandTypes, setDemandTypes] = useState<string[]>(agency?.demand_types || ['Post', 'Criativo', 'Vídeo', 'Copy', 'Landing Page']);
   const [newType, setNewType] = useState('');
+
+  // Sincroniza o estado local quando os dados do Auth finalmente carregarem ou mudarem via cache
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || '');
+      setPhone(profile.phone || '');
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (agency) {
+      setAgencyName(agency.name || '');
+      setDemandTypes(agency.demand_types || ['Post', 'Criativo', 'Vídeo', 'Copy', 'Landing Page']);
+    }
+  }, [agency]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,33 +93,87 @@ export default function Settings() {
     if (!agency) return;
     setLoading(true);
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('agencies')
         .update({ name: agencyName, demand_types: demandTypes })
-        .eq('id', agency.id);
+        .eq('id', agency.id)
+        .select()
+        .single();
   
       if (error) throw error;
+      if (!data) throw new Error('Não foi possível atualizar (Permissão negada ou agência não encontrada).');
+      
       await refreshProfile();
       toast({ title: 'Agência atualizada!', description: 'As configurações da agência foram salvas.' });
     } catch (err: any) {
       toast({ title: 'Erro ao atualizar agência', description: err.message, variant: 'destructive' });
+      if (agency) {
+        setAgencyName(agency.name);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const addDemandType = () => {
-    if (!newType.trim()) return;
-    if (demandTypes.includes(newType.trim())) {
+  const addDemandType = async () => {
+    if (!newType.trim() || !agency) return;
+    const typeToAdd = newType.trim();
+    if (demandTypes.includes(typeToAdd)) {
       toast({ title: 'Tipo já existe', variant: 'destructive' });
       return;
     }
-    setDemandTypes([...demandTypes, newType.trim()]);
-    setNewType('');
+    
+    setIsDemandLoading(true);
+    
+    try {
+      const newDemandTypes = [...demandTypes, typeToAdd];
+      const { data, error } = await supabase
+        .from('agencies')
+        .update({ demand_types: newDemandTypes })
+        .eq('id', agency.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      if (!data) throw new Error('Falha ao adicionar categoria.');
+      
+      // Apenas atualizar o estado local se a API retornou sucesso
+      setDemandTypes(newDemandTypes);
+      setNewType('');
+      toast({ title: 'Categoria adicionada com sucesso!' });
+      await refreshProfile();
+    } catch (err: any) {
+      toast({ title: 'Erro ao adicionar categoria', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDemandLoading(false);
+    }
   };
 
-  const removeDemandType = (typeToRemove: string) => {
-    setDemandTypes(demandTypes.filter(t => t !== typeToRemove));
+  const removeDemandType = async (typeToRemove: string) => {
+    if (!agency) return;
+    setIsDemandLoading(true);
+    
+    try {
+      const newDemandTypes = demandTypes.filter(t => t !== typeToRemove);
+      const { data, error } = await supabase
+        .from('agencies')
+        .update({ demand_types: newDemandTypes })
+        .eq('id', agency.id)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      if (!data) throw new Error('Falha ao remover categoria.');
+      
+      // Apenas atualizar o estado local se a API retornou sucesso
+      setDemandTypes(newDemandTypes);
+      toast({ title: 'Categoria removida com sucesso!' });
+      await refreshProfile();
+    } catch (err: any) {
+      toast({ title: 'Erro ao remover categoria', description: err.message, variant: 'destructive' });
+    } finally {
+      setIsDemandLoading(false);
+    }
   };
 
   const generateQRCode = async () => {
@@ -147,6 +219,24 @@ export default function Settings() {
       setWaInstanceLoading(false);
     }
   };
+  const handleUpgradePlan = async (selectedPlan: string) => {
+    if (!agency) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('agencies')
+        .update({ plan: selectedPlan })
+        .eq('id', agency.id);
+
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: 'Oba, Plano atualizado! 🎉', description: `Sua agência agora faz parte do plano ${selectedPlan.toUpperCase()}.` });
+    } catch (err: any) {
+      toast({ title: 'Erro ao assinar plano', description: err.message, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-20 px-4 sm:px-0">
@@ -162,8 +252,8 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-8">
-        <div className="flex items-center justify-center sm:justify-start">
-          <TabsList className="grid w-full grid-cols-4 sm:w-fit sm:min-w-[480px] bg-muted/40 p-1 rounded-xl ring-1 ring-border/50 shadow-sm h-12">
+        <div className="flex items-center justify-center sm:justify-start overflow-x-auto pb-4 sm:pb-0 no-scrollbar">
+          <TabsList className="grid w-full grid-cols-5 sm:w-fit sm:min-w-[580px] bg-muted/40 p-1 rounded-xl ring-1 ring-border/50 shadow-sm h-12">
             <TabsTrigger value="profile" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter">
               <User className="h-4 w-4" /> Perfil
             </TabsTrigger>
@@ -175,6 +265,9 @@ export default function Settings() {
             </TabsTrigger>
             <TabsTrigger value="whatsapp" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
               <MessageCircle className="h-4 w-4" /> WhatsApp
+            </TabsTrigger>
+            <TabsTrigger value="plans" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
+              <CreditCard className="h-4 w-4" /> Planos
             </TabsTrigger>
           </TabsList>
         </div>
@@ -382,9 +475,11 @@ export default function Settings() {
                       onChange={e => setNewType(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addDemandType())}
                       className="h-12 bg-muted/20 border-none ring-1 ring-border focus-visible:ring-primary"
+                      disabled={isDemandLoading}
                     />
-                    <Button onClick={addDemandType} className="h-12 px-6 gap-2 font-bold bg-foreground transition-colors hover:bg-foreground/90">
-                      <Plus className="h-4 w-4" /> Adicionar
+                    <Button onClick={addDemandType} disabled={isDemandLoading} className="h-12 px-6 gap-2 font-bold bg-foreground transition-colors hover:bg-foreground/90">
+                      {isDemandLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} 
+                      Adicionar
                     </Button>
                   </div>
                 ) : (
@@ -398,16 +493,17 @@ export default function Settings() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {demandTypes.map(type => (
                       <div key={type} className="flex items-center justify-between p-4 rounded-xl border-2 border-border bg-background hover:border-primary/30 transition-all group shadow-sm hover:shadow-md">
-                        <div className="flex items-center gap-3">
-                           <div className="h-2 w-2 rounded-full bg-primary/40" />
-                           <span className="text-sm font-extrabold tracking-tight italic">{type}</span>
+                        <div className="flex items-center gap-3 w-full overflow-hidden">
+                           <div className="h-2 w-2 flex-shrink-0 rounded-full bg-primary/40" />
+                           <span className="text-sm font-extrabold tracking-tight italic truncate">{type}</span>
                         </div>
                         {profile?.role === 'owner' && (
                           <Button 
                             variant="ghost" 
                             size="icon" 
-                            className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10"
+                            className="h-8 w-8 text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 shrink-0 ml-2"
                             onClick={() => removeDemandType(type)}
+                            disabled={isDemandLoading}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -416,15 +512,6 @@ export default function Settings() {
                     ))}
                   </div>
                 </div>
-
-                {profile?.role === 'owner' && (
-                  <div className="flex justify-end pt-4">
-                     <Button onClick={handleUpdateAgency} disabled={loading} className="px-8 h-12 gap-2 font-black uppercase text-xs tracking-widest bg-primary shadow-lg shadow-primary/20">
-                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                        Salvar Esteira
-                     </Button>
-                  </div>
-                )}
               </CardContent>
             </Card>
           </div>
@@ -554,6 +641,97 @@ export default function Settings() {
             </Card>
           </div>
         </TabsContent>
+        {/* --- Aba Planos --- */}
+        <TabsContent value="plans" className="mt-8 space-y-6">
+          <Card className="border-none shadow-xl ring-1 ring-border/50">
+            <CardHeader className="bg-muted/30 pb-6 border-b">
+               <div className="flex items-center gap-3">
+                 <div className="bg-primary/10 p-3 rounded-xl border border-primary/20"><CreditCard className="h-6 w-6 text-primary" /></div>
+                 <div>
+                   <CardTitle className="text-xl font-black">Planos e Assinaturas</CardTitle>
+                   <CardDescription>Gerencie sua assinatura. Faça um upgrade com apenas um clique!</CardDescription>
+                 </div>
+               </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                 {/* Free */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", (!agency?.plan || agency?.plan === 'free') ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                    <div className="flex justify-between items-start">
+                       <div>
+                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-muted-foreground">Free</h3>
+                         <p className="font-black text-3xl mt-2">R$ 0<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                       </div>
+                       {(!agency?.plan || agency?.plan === 'free') && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                    </div>
+                    <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> 2 Projetos Máximos</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Equipe Limitada</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Suporte Básico</li>
+                    </ul>
+                    <Button 
+                       variant={(!agency?.plan || agency?.plan === 'free') ? 'outline' : 'default'}
+                       className="w-full font-bold uppercase tracking-widest mt-auto shadow"
+                       disabled={loading || !agency?.plan || agency?.plan === 'free'}
+                       onClick={() => handleUpgradePlan('free')}
+                    >
+                       {(!agency?.plan || agency?.plan === 'free') ? 'Ativo' : 'Escolher Free'}
+                    </Button>
+                 </div>
+
+                 {/* Pro */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50 relative overflow-hidden", agency?.plan === 'pro' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                    {agency?.plan !== 'pro' && <div className="absolute top-0 right-0 bg-primary px-3 py-1 rounded-bl-xl font-bold text-[9px] uppercase text-primary-foreground tracking-widest">Recomendado</div>}
+                    <div className="flex justify-between items-start">
+                       <div>
+                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-primary">Pro</h3>
+                         <p className="font-black text-3xl mt-2">R$ 0<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                       </div>
+                       {agency?.plan === 'pro' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                    </div>
+                    <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
+                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Até 10 Projetos</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Automação WhatsApp</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Equipe Desbloqueada</li>
+                    </ul>
+                    <Button 
+                       variant={agency?.plan === 'pro' ? 'outline' : 'default'}
+                       className="w-full font-bold uppercase tracking-widest mt-auto shadow"
+                       disabled={loading || agency?.plan === 'pro'}
+                       onClick={() => handleUpgradePlan('pro')}
+                    >
+                       {agency?.plan === 'pro' ? 'Ativo' : 'Ativar Em 1 Clique'}
+                    </Button>
+                 </div>
+
+                 {/* Enterprise */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", agency?.plan === 'enterprise' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                    <div className="flex justify-between items-start">
+                       <div>
+                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-foreground">Enterprise</h3>
+                         <p className="font-black text-3xl mt-2">R$ 0<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                       </div>
+                       {agency?.plan === 'enterprise' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                    </div>
+                    <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
+                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Projetos Ilimitados</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Instâncias WhatsApp Extras</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Prioridade de Suporte</li>
+                    </ul>
+                    <Button 
+                       variant={agency?.plan === 'enterprise' ? 'outline' : 'default'}
+                       className="w-full font-bold uppercase tracking-widest mt-auto shadow"
+                       disabled={loading || agency?.plan === 'enterprise'}
+                       onClick={() => handleUpgradePlan('enterprise')}
+                    >
+                       {agency?.plan === 'enterprise' ? 'Ativo' : 'Assinar Enterprise'}
+                    </Button>
+                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
       </Tabs>
     </div>
   );

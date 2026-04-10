@@ -4,7 +4,7 @@ import { useAuth } from './useAuth';
 import type { Profile } from '@/types';
 
 export function useInvites() {
-  const { agency, user } = useAuth();
+  const { agency, user, refreshProfile } = useAuth();
   const qc = useQueryClient();
 
   const query = useQuery({
@@ -51,7 +51,8 @@ export function useInvites() {
 
       return invite;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refreshProfile();
       qc.invalidateQueries({ queryKey: ['profile'] });
       qc.invalidateQueries({ queryKey: ['agency'] });
     },

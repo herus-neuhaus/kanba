@@ -94,6 +94,7 @@ export default function Team() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-none shadow-2xl bg-background/95 backdrop-blur-xl font-bold">
+                      <SelectItem value="client">Cliente (Acesso Restrito)</SelectItem>
                       <SelectItem value="member">Colaborador (Nível 1)</SelectItem>
                       <SelectItem value="manager">Gerente (Nível 2)</SelectItem>
                       <SelectItem value="owner">Dono (Nível Master)</SelectItem>

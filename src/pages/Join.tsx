@@ -10,7 +10,7 @@ import { Users, Loader2, CheckCircle2 } from 'lucide-react';
 
 export default function Join() {
   const { token } = useParams<{ token: string }>();
-  const { session, agency: userAgency } = useAuth();
+  const { session, agency: userAgency, refreshProfile } = useAuth();
   const { acceptInvite } = useInvites();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -18,6 +18,13 @@ export default function Join() {
   const [loading, setLoading] = useState(true);
   const [inviteData, setInviteData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasJoined, setHasJoined] = useState(false);
+
+  useEffect(() => {
+    if (hasJoined && userAgency) {
+      navigate('/');
+    }
+  }, [hasJoined, userAgency, navigate]);
 
   useEffect(() => {
     async function fetchInvite() {
@@ -58,8 +65,9 @@ export default function Join() {
 
     try {
       await acceptInvite.mutateAsync(token);
+      await refreshProfile();
       toast({ title: 'Bem-vindo!', description: `Você agora faz parte da agência ${inviteData.agency?.name}` });
-      navigate('/');
+      setHasJoined(true);
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     }
@@ -125,7 +133,7 @@ export default function Join() {
                 </div>
                 <div className="flex-1">
                    <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 text-left">GESTÃO 360°</p>
-                   <p className="text-xs font-bold text-muted-foreground leading-snug text-left">Acesso total aos clientes e demandas da agência.</p>
+                   <p className="text-xs font-bold text-muted-foreground leading-snug text-left">Acesso total aos projetos e demandas da agência.</p>
                 </div>
              </div>
              

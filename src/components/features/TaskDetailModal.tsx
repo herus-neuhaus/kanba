@@ -41,6 +41,8 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
   const [cardData, setCardData] = useState<Task>(task);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  
+  const isClient = profile?.role === 'client';
 
   useEffect(() => {
     setCardData(task);
@@ -52,19 +54,20 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
   const handleSaveAndExit = async () => {
     try {
-      const { assignee, project, comments, created_at, ...payload } = cardData;
+      const { assignees, project, comments, created_at, ...payload } = cardData;
 
-      let newAssigneeId = payload.assignee_id;
-      if (newAssigneeId === 'unassigned') {
-        newAssigneeId = null;
-        payload.assignee_id = null;
+      if (!payload.assignee_ids || payload.assignee_ids.length === 0) {
+        toast({ title: 'Aviso', description: 'Por favor, atribua pelo menos um responsável.', variant: 'destructive' });
+        return;
       }
 
-      const hasAssigneeChanged = task.assignee_id !== newAssigneeId;
+      const oldAssignees = task.assignee_ids || [];
+      const newAssignees = payload.assignee_ids || [];
+      const newlyAssigned = newAssignees.filter(id => !oldAssignees.includes(id));
 
       await updateTask.mutateAsync(payload as any);
 
-      if (hasAssigneeChanged && newAssigneeId) {
+      for (const newAssigneeId of newlyAssigned) {
         const newAssignee = team.find(m => m.id === newAssigneeId);
         if (newAssignee?.phone) {
           const message = `📋 *Nova Demanda Atribuída*\n\nOlá ${newAssignee.full_name}!\nVocê foi atribuído como responsável pela demanda: *${task.title}*.\n\nConfira no Painel da Agência.`;
@@ -146,6 +149,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Tipo</label>
               <Select
+                disabled={isClient}
                 value={cardData.labels?.[0] || (currentDemandTypes[0] || 'Geral')}
                 onValueChange={v => updateCardLocal({ labels: [v, ...(cardData.labels?.slice(1) || [])] })}
               >
@@ -157,7 +161,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Prioridade</label>
-              <Select value={cardData.priority || 'baixa'} onValueChange={(v: any) => updateCardLocal({ priority: v })}>
+              <Select disabled={isClient} value={cardData.priority || 'baixa'} onValueChange={(v: any) => updateCardLocal({ priority: v })}>
                 <SelectTrigger className="w-full">
                   <SelectValue />
                 </SelectTrigger>
@@ -170,35 +174,63 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
             </div>
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Coluna</label>
-              <Select value={cardData.column_id || ''} onValueChange={v => updateCardLocal({ column_id: v })}>
+              <Select disabled={isClient} value={cardData.column_id || ''} onValueChange={v => updateCardLocal({ column_id: v })}>
                 <SelectTrigger className="w-full"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
                   {columns.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-h-[70px]">
               <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Responsável</label>
-              <Select value={cardData.assignee_id || ''} onValueChange={v => updateCardLocal({ assignee_id: v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Sem responsável" /></SelectTrigger>
-                <SelectContent>
-                   <SelectItem value="unassigned">Sem responsável</SelectItem>
-                   {team.map(m => <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              {!isClient && (
+                <Select value="" onValueChange={v => {
+                   const currentIds = cardData.assignee_ids || [];
+                   if (!currentIds.includes(v)) {
+                     updateCardLocal({ assignee_ids: [...currentIds, v] });
+                   }
+                }}>
+                  <SelectTrigger className="w-full"><SelectValue placeholder="Adicionar..." /></SelectTrigger>
+                  <SelectContent>
+                     {team.filter(m => !(cardData.assignee_ids || []).includes(m.id)).map(m => (
+                       <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                     ))}
+                  </SelectContent>
+                </Select>
+              )}
+              
+              {(cardData.assignee_ids || []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {(cardData.assignee_ids || []).map(id => {
+                    const member = team.find(m => m.id === id);
+                    if (!member) return null;
+                    return (
+                      <div key={id} className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary border border-primary/20 rounded-full text-[10px] font-bold shadow-sm">
+                        <span className="truncate max-w-[80px]">{member.full_name?.split(' ')[0]}</span>
+                        {!isClient && (
+                          <button type="button" onClick={() => updateCardLocal({ assignee_ids: (cardData.assignee_ids || []).filter(aid => aid !== id) })} className="rounded-full hover:bg-primary/30 p-0.5 transition-colors">
+                            <X className="h-[10px] w-[10px]" />
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Data de Entrega</label>
-              <Input type="date" className="w-full" value={cardData.due_date || ''} onChange={e => updateCardLocal({ due_date: e.target.value || null })} />
+              <Input disabled={isClient} type="date" className="w-full" value={cardData.due_date || ''} onChange={e => updateCardLocal({ due_date: e.target.value || null })} />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Descrição</label>
             <BalanceTextarea
+              disabled={isClient}
               placeholder="Adicione uma descrição mais detalhada para esta demanda..."
               value={cardData.description || ''}
               onChange={(e: any) => updateCardLocal({ description: e.target.value })}
@@ -214,7 +246,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
             <div className="space-y-1">
               {checklist.map(item => (
                 <div key={item.id} className="flex items-center gap-3 group px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors">
-                  <Checkbox checked={item.done} onCheckedChange={() => toggleCheckItem(item.id)} />
+                  <Checkbox disabled={isClient} checked={item.done} onCheckedChange={() => toggleCheckItem(item.id)} />
 
                   {editingItemId === item.id ? (
                     <Input
@@ -226,35 +258,39 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
                     />
                   ) : (
                     <span
-                      onClick={() => setEditingItemId(item.id)}
-                      className={`flex-1 text-sm cursor-pointer ${item.done ? 'line-through text-muted-foreground' : ''}`}
+                      onClick={() => { if (!isClient) setEditingItemId(item.id); }}
+                      className={`flex-1 text-sm ${!isClient && 'cursor-pointer'} ${item.done ? 'line-through text-muted-foreground' : ''}`}
                     >
                       {item.text}
                     </span>
                   )}
 
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10"
-                    onClick={() => removeCheckItem(item.id)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
+                  {!isClient && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10"
+                      onClick={() => removeCheckItem(item.id)}
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                 </div>
               ))}
-              <div className="flex gap-2 pt-2 px-1">
-                <Input
-                  placeholder="Adicionar novo item..."
-                  className="h-9 flex-1"
-                  value={newCheckItem}
-                  onChange={e => setNewCheckItem(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCheckItem())}
-                />
-                <Button variant="outline" size="sm" onClick={addCheckItem} className="h-9 px-3">
-                  <Plus className="h-4 w-4 mr-1" /> Adicionar
-                </Button>
-              </div>
+              {!isClient && (
+                <div className="flex gap-2 pt-2 px-1">
+                  <Input
+                    placeholder="Adicionar novo item..."
+                    className="h-9 flex-1"
+                    value={newCheckItem}
+                    onChange={e => setNewCheckItem(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addCheckItem())}
+                  />
+                  <Button variant="outline" size="sm" onClick={addCheckItem} className="h-9 px-3">
+                    <Plus className="h-4 w-4 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -328,18 +364,28 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
           </div>
         </div>
 
-        <DialogFooter className="p-4 bg-muted/40 border-t flex items-center justify-between sm:justify-between w-full">
-          <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={handleDelete}>
-            <Trash2 className="h-4 w-4 mr-2" /> Excluir Demanda
-          </Button>
-          <div className="flex gap-2">
-             <Button variant="outline" size="sm" onClick={onClose}>
-                Cancelar
-             </Button>
-             <Button onClick={handleSaveAndExit} disabled={updateTask.isPending} className="shadow-md">
-                <Save className="h-4 w-4 mr-2" /> {updateTask.isPending ? 'Salvando...' : 'Salvar e Sair'}
-             </Button>
-          </div>
+        <DialogFooter className="p-4 bg-muted/40 border-t flex flex-row items-center justify-between w-full sm:justify-between">
+          {!isClient ? (
+            <>
+              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={handleDelete}>
+                <Trash2 className="h-4 w-4 mr-2" /> Excluir Demanda
+              </Button>
+              <div className="flex justify-end gap-2 shrink-0">
+                 <Button variant="outline" size="sm" onClick={onClose}>
+                    Cancelar
+                 </Button>
+                 <Button onClick={handleSaveAndExit} disabled={updateTask.isPending} className="shadow-md shrink-0">
+                    <Save className="h-4 w-4 mr-2" /> {updateTask.isPending ? 'Salvando...' : 'Salvar e Sair'}
+                 </Button>
+              </div>
+            </>
+          ) : (
+            <div className="w-full flex justify-end">
+               <Button variant="outline" size="sm" onClick={onClose}>
+                  Fechar
+               </Button>
+            </div>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
