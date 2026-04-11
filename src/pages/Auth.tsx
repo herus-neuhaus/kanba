@@ -373,7 +373,7 @@ export default function Auth() {
 
         {/* Back to landing */}
         <Link
-          to="/landing"
+          to="/"
           style={{ marginTop: 24, fontSize: '0.75rem', color: C.oatmealDim, textDecoration: 'none', position: 'relative', zIndex: 1, transition: 'color 0.2s' }}
           onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.color = C.gold)}
           onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.color = C.oatmealDim)}
