@@ -6,10 +6,14 @@
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="/K transparante.png" />
-    <link rel="apple-touch-icon" href="/K transparante.png" />
-
-    <!-- SEO -->
-    <title>Kanba - Gestão de Projetos para Agências</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kanba | Gestão de Agências & CRM Automação WhatsApp</title>
+    
+    <!-- Production Polyfills for Excalidraw/React -->
+    <script>
+      window.global = window;
+      window.process = { env: { NODE_ENV: 'production' } };
+    </script>
     <meta name="description" content="O Kanba centraliza todas as demandas da sua agência em um só lugar e usa automações no WhatsApp pra garantir que nada atrase, nada se perca e sua equipe execute no prazo." />
     <meta name="author" content="Kanba" />
 
