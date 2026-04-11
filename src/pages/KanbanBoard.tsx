@@ -8,12 +8,13 @@ import { KanbanColumn } from '@/components/features/KanbanColumn';
 import { TaskDetailModal } from '@/components/features/TaskDetailModal';
 import { CreateTaskDialog } from '@/components/features/CreateTaskDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo, BookOpen } from 'lucide-react';
+import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo, BookOpen, CalendarDays } from 'lucide-react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { isPast } from 'date-fns';
 import { logAndNotify } from '@/lib/notifications';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectWiki } from '@/components/features/ProjectWiki';
+import { ProjectCalendar } from '@/components/features/ProjectCalendar';
 
 export default function KanbanBoard() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -125,6 +126,10 @@ export default function KanbanBoard() {
             <BookOpen className="h-4 w-4" />
             <span className="font-semibold">Wiki / Ideias</span>
           </TabsTrigger>
+          <TabsTrigger value="calendar" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+            <CalendarDays className="h-4 w-4" />
+            <span className="font-semibold">Calendário</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="kanban" className="mt-0 outline-none">
@@ -159,6 +164,10 @@ export default function KanbanBoard() {
 
         <TabsContent value="wiki" className="mt-0 outline-none">
           <ProjectWiki projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-0 outline-none">
+          <ProjectCalendar projectId={projectId} />
         </TabsContent>
       </Tabs>
 

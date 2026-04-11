@@ -1,48 +1,109 @@
 import { useState } from 'react';
-import { Navigate, useSearchParams, useNavigate } from 'react-router-dom';
+import { Navigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  ShieldCheck, 
-  Mail, 
-  Lock, 
-  User as UserIcon, 
-  Zap, 
-  Loader2, 
-  Phone,
-  ArrowRight
+import {
+  Mail, Lock, User as UserIcon, Loader2, CheckCircle2,
+  ArrowRight, ShieldCheck, Phone,
 } from 'lucide-react';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 
-export default function Auth() {
-  const { session, loading: authLoading } = useAuth();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const returnUrl = searchParams.get('returnUrl');
-  
-  const [isSignUp, setIsSignUp] = useState(returnUrl?.includes('/join/') || false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const { signUp, signIn } = useAuth();
-  const { toast } = useToast();
+/* ─────────────────────────────────────────
+   Design tokens — identical to Landing.tsx
+───────────────────────────────────────── */
+const C = {
+  bg: '#212F3D',
+  bgDeep: '#172028',
+  bgDeeper: '#111922',
+  bgCard: '#2A3A4C',
+  bgInput: '#1C2A38',
+  palladian: '#EEE9DF',
+  oatmeal: '#C9C1B1',
+  oatmealDim: '#8E8779',
+  gold: '#B39B6F',
+  goldBright: '#C9AE7E',
+  copper: '#A35139',
+  borderSubtle: 'rgba(179,155,111,0.22)',
+  borderCard: 'rgba(238,233,223,0.08)',
+  gradientCta: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
+  gradientCtaHov: 'linear-gradient(135deg, #9E4733 0%, #B8634A 35%, #C5AC80 75%, #D4BC90 100%)',
+  glowRadial: 'radial-gradient(ellipse 700px 500px at 50% 30%, rgba(163,81,57,0.16) 0%, transparent 70%)',
+};
 
-  if (authLoading) return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0d0620]">
-      <div className="relative h-16 w-16">
-        <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
-        <div className="relative h-full w-full animate-spin rounded-full border-2 border-primary border-t-transparent" />
+/* ─────────────────────────────────────────
+   Reusable input field
+───────────────────────────────────────── */
+function AuthInput({
+  type = 'text', placeholder, value, onChange, icon, required = true,
+}: {
+  type?: string; placeholder: string; value: string;
+  onChange: (v: string) => void; icon: React.ReactNode; required?: boolean;
+}) {
+  const [focused, setFocused] = useState(false);
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* icon */}
+      <div style={{
+        position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)',
+        color: focused ? C.gold : C.oatmealDim,
+        transition: 'color 0.2s', zIndex: 1, display: 'flex', alignItems: 'center',
+      }}>
+        {icon}
       </div>
+      <input
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        required={required}
+        style={{
+          width: '100%',
+          height: 52,
+          paddingLeft: 46,
+          paddingRight: 16,
+          background: C.bgInput,
+          border: `1px solid ${focused ? C.borderSubtle : 'rgba(238,233,223,0.06)'}`,
+          borderRadius: 4,
+          color: C.palladian,
+          fontFamily: "'Poppins', sans-serif",
+          fontSize: '0.9rem',
+          fontWeight: 400,
+          outline: 'none',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+          boxShadow: focused ? `0 0 0 3px rgba(179,155,111,0.12)` : 'none',
+        }}
+      />
     </div>
   );
-  
-  if (session && !authLoading) {
-    return <Navigate to={returnUrl || "/"} replace />;
-  }
+}
+
+/* ─────────────────────────────────────────
+   Main Auth Page
+───────────────────────────────────────── */
+export default function Auth() {
+  const { session, loading: authLoading, signUp, signIn } = useAuth();
+  const [searchParams] = useSearchParams();
+  const returnUrl = searchParams.get('returnUrl');
+  const { toast } = useToast();
+
+  const [isSignUp, setIsSignUp] = useState(returnUrl?.includes('/join/') || false);
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [phone, setPhone]       = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  /* ── Loading spinner ── */
+  if (authLoading) return (
+    <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center', background: C.bgDeeper }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', border: `2px solid ${C.gold}`, borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
+    </div>
+  );
+
+  if (session && !authLoading) return <Navigate to={returnUrl || '/'} replace />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,10 +111,10 @@ export default function Auth() {
     try {
       if (isSignUp) {
         await signUp(email, password, fullName, phone);
-        toast({ title: 'Residência ativa!', description: 'Sua conta foi criada. Verifique seu e-mail para acesso total.' });
+        toast({ title: 'Conta criada!', description: 'Verifique seu e-mail para ativar o acesso.' });
       } else {
         await signIn(email, password);
-        toast({ title: 'Acesso autorizado', description: 'Central de comando liberada.' });
+        toast({ title: 'Acesso autorizado', description: 'Bem-vindo de volta ao Kanba.' });
       }
     } catch (err: any) {
       toast({ title: 'Falha na autenticação', description: err.message, variant: 'destructive' });
@@ -63,224 +124,338 @@ export default function Auth() {
   };
 
   return (
-    <div className="min-h-screen w-full flex bg-[#0f0b1e] text-white font-['Montserrat'] overflow-hidden">
-      
-      {/* 55% LEFT COLUMN: ANIMATED SPACE SCENE */}
-      <div className="hidden lg:flex w-[55%] relative overflow-hidden bg-gradient-to-br from-[#0d0620] to-[#1a0a3d] flex-col justify-between p-16">
-        
-        {/* LOGO */}
-        <div className="z-20 flex items-center gap-4">
-          <img src="/src/img/kanba-logo-transparent.png" alt="Kanba Logo" className="h-12 w-auto object-contain" />
-          <div className="text-xs font-black tracking-[0.4em] text-white/40 uppercase">
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: C.bg, fontFamily: "'Poppins', sans-serif", overflow: 'hidden' }}>
+
+      {/* Google Fonts */}
+      <link rel="preconnect" href="https://fonts.googleapis.com" />
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+      <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+      {/* ══════════════════════════════════════
+          LEFT COLUMN  (hidden on mobile)
+          Brand panel with value props
+      ══════════════════════════════════════ */}
+      <div style={{
+        display: 'none',
+        width: '52%',
+        background: C.bgDeeper,
+        flexDirection: 'column',
+        padding: '52px 60px',
+        position: 'relative',
+        overflow: 'hidden',
+        borderRight: `1px solid ${C.borderCard}`,
+      }} className="auth-left-panel">
+
+        {/* Copper radial glow */}
+        <div style={{ position: 'absolute', inset: 0, background: C.glowRadial, pointerEvents: 'none' }} />
+        {/* Noise texture */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E")`,
+          pointerEvents: 'none',
+        }} />
+        {/* Geometric dot grid */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          backgroundImage: 'radial-gradient(circle, rgba(179,155,111,0.10) 1px, transparent 1px)',
+          backgroundSize: '30px 30px',
+          pointerEvents: 'none', opacity: 0.6,
+        }} />
+
+        {/* Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
+          <img src="/K transparante.png" alt="K" style={{ height: 36, filter: 'drop-shadow(0 0 10px rgba(163,81,57,0.6))' }} />
+          <span style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.5rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             KANBA
+          </span>
+        </div>
+
+        {/* Main copy */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1, marginTop: 60 }}>
+          {/* Eyebrow */}
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${C.borderSubtle}`, background: 'rgba(179,155,111,0.07)', padding: '5px 14px', borderRadius: 3, marginBottom: 28, alignSelf: 'flex-start' }}>
+            <ShieldCheck size={13} color={C.gold} />
+            <span style={{ fontSize: '0.65rem', color: C.gold, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.12em', fontWeight: 600 }}>
+              EXCLUSIVO PARA AGÊNCIAS
+            </span>
+          </div>
+
+          <h2 style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 'clamp(2.8rem, 4vw, 4.5rem)', lineHeight: 1.03, color: C.palladian, margin: '0 0 24px', letterSpacing: '-0.02em' }}>
+            Acesse sua<br />
+            <span style={{ background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              central de
+            </span>
+            <br />comando.
+          </h2>
+
+          <p style={{ fontSize: '1rem', color: C.oatmeal, lineHeight: 1.75, maxWidth: 440, fontWeight: 300, margin: '0 0 48px' }}>
+            O Kanba centraliza todas as demandas da sua agência e usa automação no WhatsApp para garantir que nada atrase e nada se perca.
+          </p>
+
+          {/* Feature bullets */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {[
+              'Kanban visual com prioridades e prazos',
+              'Notificações automáticas via WhatsApp',
+              'Portal do cliente sem chamadas no privado',
+              'Wiki integrada para briefings e processos',
+            ].map(text => (
+              <div key={text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(179,155,111,0.1)', border: `1px solid rgba(179,155,111,0.35)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <CheckCircle2 size={10} color={C.gold} />
+                </div>
+                <span style={{ fontSize: '0.88rem', color: C.oatmeal, fontWeight: 300 }}>{text}</span>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* STARS */}
-        <div className="absolute inset-0 z-0">
-          {[...Array(80)].map((_, i) => (
-            <div 
-              key={i}
-              className="absolute bg-white rounded-full animate-pulse"
-              style={{
-                width: Math.random() * 2 + 'px',
-                height: Math.random() * 2 + 'px',
-                top: Math.random() * 100 + '%',
-                left: Math.random() * 100 + '%',
-                animationDelay: Math.random() * 5 + 's',
-                opacity: Math.random() * 0.7 + 0.3
-              }}
-            />
-          ))}
-        </div>
-
-        {/* SHOOTING STARS */}
-        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-          <div className="absolute w-[150px] h-0.5 bg-gradient-to-r from-white to-transparent -rotate-45 -translate-x-[200%] animate-[shoot_4s_infinite_linear]" style={{ top: '20%', left: '30%' }} />
-          <div className="absolute w-[200px] h-0.5 bg-gradient-to-r from-white to-transparent -rotate-45 -translate-x-[200%] animate-[shoot_6s_infinite_linear_1s]" style={{ top: '50%', left: '70%' }} />
-          <div className="absolute w-[100px] h-0.5 bg-gradient-to-r from-white to-transparent -rotate-45 -translate-x-[200%] animate-[shoot_3s_infinite_linear_2s]" style={{ top: '20%', left: '5%' }} />
-        </div>
-
-        {/* PLANET LAYER */}
-        <div className="absolute bottom-[20%] right-[-50px] z-10 scale-110">
-          {/* ORBITAL RING */}
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[150px] border border-cyan-500/10 rounded-[50%] rotate-[25deg] z-0" />
-          
-          {/* THE PLANET */}
-          <div className="relative w-[380px] h-[380px] rounded-full bg-[radial-gradient(circle_at_35%_35%,#67e8f9,#0891b2,#0e7490,#164e63)] shadow-[inset_-20px_-20px_60px_rgba(0,0,0,0.5),0_0_100px_rgba(8,145,178,0.2)]">
-             {/* Suble Cloud Texture (via shadows/gradients) */}
-             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_top_left,white_0%,transparent_50%)] rounded-full blur-md" />
-             <div className="absolute inset-0 opacity-10 bg-[conic-gradient(from_0deg_at_50%_50%,transparent_0%,rgba(255,255,255,0.7)_180deg,transparent_360deg)] rounded-full blur-[100px]" />
-          </div>
-
-          {/* SMALL MOON */}
-          <div className="absolute top-0 right-[-40px] w-12 h-12 rounded-full bg-gradient-to-br from-purple-400 to-purple-900 shadow-xl" />
-        </div>
-
-        {/* HERO TEXT */}
-        <div className="z-20 mt-auto max-w-2xl translate-y-12 animate-fade-up">
-           <h2 className="leading-none tracking-tighter mb-4">
-             <span className="block text-[64px] font-black text-white">ACESSE SUA</span>
-             <span className="block text-[64px] font-black text-[#7c3aed]">CENTRAL DE COMANDO!</span>
-           </h2>
-           <p className="text-slate-400 font-medium text-lg max-w-md">
-             O Kanba centraliza todas as demandas da sua agência em um só lugar e usa automações no WhatsApp pra garantir que nada atrase, nada se perca e sua equipe execute no prazo.
-           </p>
-        </div>
+        {/* Bottom note */}
+        <p style={{ fontSize: '0.72rem', color: C.oatmealDim, position: 'relative', zIndex: 1, marginTop: 40 }}>
+          © 2025 Kanba · Todos os direitos reservados
+        </p>
       </div>
 
-      {/* 45% RIGHT COLUMN: AUTH PANEL */}
-      <div className="w-full lg:w-[45%] bg-[#0f0b1e] flex flex-col p-8 lg:p-16 relative">
-        
-        {/* TOP TOGGLE */}
-        <div className="absolute top-12 right-12 text-[10px] font-black uppercase tracking-widest text-[#7c3aed]/60 hover:text-[#7c3aed] transition-colors cursor-pointer" onClick={() => setIsSignUp(!isSignUp)}>
-          {isSignUp ? 'JÁ TEM CONTA? ENTRAR' : 'QUERO ME REGISTRAR →'}
+      {/* ══════════════════════════════════════
+          RIGHT COLUMN — Auth form
+      ══════════════════════════════════════ */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 32px', position: 'relative', overflow: 'hidden', minHeight: '100vh' }}>
+
+        {/* Subtle glow behind form */}
+        <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 600px 500px at 50% 45%, rgba(163,81,57,0.10) 0%, transparent 65%)', pointerEvents: 'none' }} />
+
+        {/* Mobile-only logo */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 48, position: 'relative', zIndex: 1 }} className="auth-mobile-logo">
+          <img src="/K transparante.png" alt="K" style={{ height: 30, filter: 'drop-shadow(0 0 8px rgba(163,81,57,0.5))' }} />
+          <span style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            KANBA
+          </span>
         </div>
 
-        <div className="my-auto max-w-[400px] w-full mx-auto space-y-12">
-          {/* HEADER */}
-          <div className="space-y-3 transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
-             <h3 className="text-[52px] font-black leading-none tracking-tight">
-               {isSignUp ? 'REGISTRO' : 'ENTRAR'}
-             </h3>
-             <p className="text-slate-400 font-medium">Entre com seu endereço de email</p>
+        {/* Form card */}
+        <div style={{
+          width: '100%', maxWidth: 440,
+          background: C.bgCard,
+          border: `1px solid ${C.borderCard}`,
+          borderRadius: 6,
+          padding: 'clamp(28px,5vw,44px)',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(179,155,111,0.06)',
+          position: 'relative', zIndex: 1,
+        }}>
+          {/* Top accent line */}
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${C.copper}, ${C.gold}, transparent)`, borderRadius: '6px 6px 0 0' }} />
+
+          {/* Header */}
+          <div style={{ marginBottom: 32 }}>
+            <p style={{ fontSize: '0.65rem', color: C.gold, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.16em', fontWeight: 600, margin: '0 0 10px', textTransform: 'uppercase' }}>
+              {isSignUp ? 'CRIAR CONTA' : 'ACESSO À PLATAFORMA'}
+            </p>
+            <h1 style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: C.palladian, margin: 0, letterSpacing: '-0.01em', lineHeight: 1.05 }}>
+              {isSignUp ? 'Começar agora.' : 'Entrar.'}
+            </h1>
+            <p style={{ fontSize: '0.85rem', color: C.oatmealDim, margin: '10px 0 0', fontWeight: 300 }}>
+              {isSignUp ? 'Preencha os dados para criar sua conta.' : 'Entre com seu e-mail e senha.'}
+            </p>
           </div>
 
-          {/* FORM */}
-          <form onSubmit={handleSubmit} className="space-y-6 animate-in fade-in duration-700">
-            <div className="space-y-4">
+          {/* Form */}
+          <form onSubmit={handleSubmit}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
               {isSignUp && (
-                <div className="space-y-4">
-                   <div className="relative group">
-                    <UserIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-purple-500 transition-colors z-10" />
-                    <input 
-                      placeholder="Seu Nome" 
-                      value={fullName}
-                      onChange={e => setFullName(e.target.value)}
-                      className="w-full h-14 pl-12 bg-[#1a1530] border-none rounded-2xl text-white font-bold placeholder:text-slate-600 focus:ring-2 focus:ring-[#7c3aed] transition-all outline-none"
-                      required
-                    />
-                  </div>
-
-                  <div className="relative premium-phone-container">
+                <>
+                  <AuthInput
+                    placeholder="Seu nome completo"
+                    value={fullName}
+                    onChange={setFullName}
+                    icon={<UserIcon size={17} />}
+                  />
+                  {/* Phone input — styled to match */}
+                  <div style={{ position: 'relative' }} className="kanba-phone-wrap">
                     <PhoneInput
                       defaultCountry="br"
                       value={phone}
                       onChange={setPhone}
-                      className="w-full relative"
-                      inputClassName="!h-14 !w-full !bg-[#1a1530] !border-none !rounded-2xl !text-white !font-bold !pl-16 !placeholder-slate-600 !transition-all"
+                      className="w-full"
+                      inputStyle={{
+                        width: '100%',
+                        height: 52,
+                        background: C.bgInput,
+                        border: `1px solid rgba(238,233,223,0.06)`,
+                        borderRadius: 4,
+                        color: C.palladian,
+                        fontFamily: "'Poppins', sans-serif",
+                        fontSize: '0.9rem',
+                        paddingLeft: 54,
+                      }}
                       countrySelectorStyleProps={{
-                        className: "!absolute !left-0 !bg-transparent !border-none !z-10 !h-14 !flex !items-center !justify-center !w-12"
+                        style: {
+                          background: 'transparent',
+                          border: 'none',
+                          height: 52,
+                        },
+                        buttonStyle: {
+                          background: 'transparent',
+                          border: 'none',
+                          paddingLeft: 12,
+                        },
                       }}
                     />
                   </div>
-                </div>
+                </>
               )}
 
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-purple-500 transition-colors z-10" />
-                <input 
-                  type="email"
-                  placeholder="seunome@gmail.com"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  className="w-full h-14 pl-12 bg-[#1a1530] border-none rounded-2xl text-white font-bold placeholder:text-slate-600 focus:ring-2 focus:ring-[#7c3aed] transition-all outline-none"
-                  required
-                />
-              </div>
+              <AuthInput
+                type="email"
+                placeholder="seunome@agencia.com"
+                value={email}
+                onChange={setEmail}
+                icon={<Mail size={17} />}
+              />
 
-              {!isSignUp && (
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-purple-500 transition-colors z-10" />
-                  <input 
-                    type="password"
-                    placeholder="Sua Senha"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full h-14 pl-12 bg-[#1a1530] border-none rounded-2xl text-white font-bold placeholder:text-slate-600 focus:ring-2 focus:ring-[#7c3aed] transition-all outline-none"
-                    required
-                  />
-                </div>
-              )}
-
-              {isSignUp && (
-                <div className="relative group">
-                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500 group-focus-within:text-purple-500 transition-colors z-10" />
-                  <input 
-                    type="password"
-                    placeholder="Definir Senha"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    className="w-full h-14 pl-12 bg-[#1a1530] border-none rounded-2xl text-white font-bold placeholder:text-slate-600 focus:ring-2 focus:ring-[#7c3aed] transition-all outline-none"
-                    required
-                  />
-                </div>
-              )}
+              <AuthInput
+                type="password"
+                placeholder={isSignUp ? 'Definir senha' : 'Sua senha'}
+                value={password}
+                onChange={setPassword}
+                icon={<Lock size={17} />}
+              />
             </div>
 
-            <button 
-              type="submit" 
-              disabled={submitting}
-              className="w-full h-14 bg-gradient-to-r from-[#5b21b6] via-[#7c3aed] to-[#6d28d9] rounded-full font-black text-lg tracking-wide shadow-[0_10px_30px_rgba(124,58,237,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2 group"
-            >
-              {submitting ? <Loader2 className="h-5 w-5 animate-spin" /> : (isSignUp ? 'Criar Conta' : 'Entrar')}
-            </button>
+            {/* Submit */}
+            <SubmitButton submitting={submitting} label={isSignUp ? 'CRIAR CONTA' : 'ENTRAR NA PLATAFORMA'} />
           </form>
 
-          {/* DIVIDER */}
-          <div className="flex items-center gap-4 text-xs font-black text-slate-700 uppercase tracking-widest">
-            <div className="flex-1 h-[1px] bg-slate-800/50" />
-            Ou continue com
-            <div className="flex-1 h-[1px] bg-slate-800/50" />
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0' }}>
+            <div style={{ flex: 1, height: 1, background: C.borderCard }} />
+            <span style={{ fontSize: '0.65rem', color: C.oatmealDim, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>ou</span>
+            <div style={{ flex: 1, height: 1, background: C.borderCard }} />
           </div>
 
-          {/* SOCIAL BUTTONS */}
-          <div className="grid grid-cols-2 gap-4">
-             <button className="h-12 bg-[#1a1530] flex items-center justify-center gap-3 rounded-2xl font-bold text-sm hover:bg-[#251e44] transition-colors border border-white/5">
-                <svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#EA4335" d="M12 11h9v2h-9z"/><path fill="#FBBC05" d="M12 11V3h9v8z"/><path fill="#34A853" d="M12 11h9v9H3v-9z"/><path fill="#4285F4" d="M12 11V3H3v18h9v-7h9v-2h-9z"/></svg>
-                Google
-             </button>
-             <button className="h-12 bg-[#1a1530] flex items-center justify-center gap-3 rounded-2xl font-bold text-sm hover:bg-[#251e44] transition-colors border border-white/5">
-                <svg className="w-5 h-5" fill="#1877F2" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                Facebook
-             </button>
-          </div>
+          {/* Toggle sign-up ↔ sign-in */}
+          <button
+            type="button"
+            onClick={() => setIsSignUp(!isSignUp)}
+            style={{
+              width: '100%', padding: '13px 0',
+              background: 'transparent',
+              border: `1px solid ${C.borderSubtle}`,
+              borderRadius: 4,
+              fontFamily: "'Oswald',sans-serif",
+              fontWeight: 600,
+              fontSize: '0.85rem',
+              letterSpacing: '0.1em',
+              textTransform: 'uppercase',
+              color: C.oatmeal,
+              cursor: 'pointer',
+              transition: 'all 0.22s',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.gold; (e.currentTarget as HTMLButtonElement).style.color = C.gold; (e.currentTarget as HTMLButtonElement).style.background = 'rgba(179,155,111,0.06)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = C.borderSubtle; (e.currentTarget as HTMLButtonElement).style.color = C.oatmeal; (e.currentTarget as HTMLButtonElement).style.background = 'transparent'; }}
+          >
+            {isSignUp ? 'Já tenho conta — Entrar' : 'Criar conta gratuita'}
+            <ArrowRight size={14} />
+          </button>
 
-          {/* TERMS */}
-          <p className="text-[10px] text-center text-slate-500 font-medium">
-             Ao se registrar você aceita nossos <span className="text-[#7c3aed] font-bold cursor-pointer hover:underline">Termos e Condições</span>
+          {/* Legal */}
+          <p style={{ marginTop: 20, textAlign: 'center', fontSize: '0.72rem', color: C.oatmealDim, lineHeight: 1.6 }}>
+            Ao continuar você concorda com os{' '}
+            <span style={{ color: C.gold, cursor: 'pointer', borderBottom: `1px solid ${C.borderSubtle}` }}>
+              Termos de Uso
+            </span>
+            {' '}do Kanba.
           </p>
         </div>
+
+        {/* Back to landing */}
+        <Link
+          to="/landing"
+          style={{ marginTop: 24, fontSize: '0.75rem', color: C.oatmealDim, textDecoration: 'none', position: 'relative', zIndex: 1, transition: 'color 0.2s' }}
+          onMouseEnter={e => ((e.currentTarget as HTMLAnchorElement).style.color = C.gold)}
+          onMouseLeave={e => ((e.currentTarget as HTMLAnchorElement).style.color = C.oatmealDim)}
+        >
+          ← Voltar para a página inicial
+        </Link>
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes shoot {
-          0% { transform: translateX(-200%) rotate(-45deg); opacity: 1; }
-          40% { opacity: 1; }
-          100% { transform: translateX(800%) rotate(-45deg); opacity: 0; }
+      {/* Global overrides */}
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
         }
-        
-        .animate-fade-up {
-          animation: fade-up 1s ease forwards;
+        /* Show left panel on desktop */
+        @media (min-width: 900px) {
+          .auth-left-panel  { display: flex !important; }
+          .auth-mobile-logo { display: none !important; }
         }
-        
-        @keyframes fade-up {
-          from { opacity: 0; transform: translateY(30px); }
-          to { opacity: 1; transform: translateY(0); }
+        /* Phone input reset to match theme */
+        .kanba-phone-wrap .react-international-phone-input-container {
+          width: 100%;
         }
-
-        /* Phone Input Overrides for Space Theme */
-        .premium-phone-container .react-international-phone-country-selector-dropdown {
-          background: #1a1530 !important;
-          border-color: #7c3aed33 !important;
+        .kanba-phone-wrap .react-international-phone-country-selector-dropdown {
+          background: #1C2A38 !important;
+          border: 1px solid rgba(179,155,111,0.22) !important;
+          border-radius: 4px !important;
         }
-        .premium-phone-container .react-international-phone-country-selector-list-item {
-          color: #fff !important;
+        .kanba-phone-wrap .react-international-phone-country-selector-list-item {
+          color: #EEE9DF !important;
+          font-family: 'Poppins', sans-serif !important;
+          font-size: 0.85rem !important;
         }
-        .premium-phone-container .react-international-phone-country-selector-list-item:hover {
-          background: #7c3aed22 !important;
+        .kanba-phone-wrap .react-international-phone-country-selector-list-item:hover {
+          background: rgba(179,155,111,0.10) !important;
         }
-      `}} />
+        .kanba-phone-wrap input::placeholder { color: #8E8779 !important; }
+        .kanba-phone-wrap .react-international-phone-flag-emoji { font-size: 1.1rem; }
+      `}</style>
     </div>
+  );
+}
+
+/* ─────────────────────────────────────────
+   Submit button with shimmer + glow
+───────────────────────────────────────── */
+function SubmitButton({ submitting, label }: { submitting: boolean; label: string }) {
+  const [hov, setHov] = useState(false);
+  const gradientCta = 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)';
+  const gradientHov = 'linear-gradient(135deg, #9E4733 0%, #B8634A 35%, #C5AC80 75%, #D4BC90 100%)';
+  return (
+    <button
+      type="submit"
+      disabled={submitting}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+      style={{
+        width: '100%', height: 52,
+        background: submitting ? 'rgba(163,81,57,0.5)' : (hov ? gradientHov : gradientCta),
+        border: 'none', borderRadius: 4, cursor: submitting ? 'not-allowed' : 'pointer',
+        fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+        fontSize: '0.95rem', letterSpacing: '0.1em', textTransform: 'uppercase',
+        color: '#EEE9DF',
+        boxShadow: hov && !submitting
+          ? '0 0 0 1px rgba(201,174,126,0.4), 0 8px 32px rgba(163,81,57,0.55), 0 0 60px rgba(163,81,57,0.18)'
+          : '0 4px 20px rgba(163,81,57,0.35)',
+        transform: hov && !submitting ? 'translateY(-2px)' : 'none',
+        transition: 'all 0.25s ease',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+        position: 'relative', overflow: 'hidden',
+      }}
+    >
+      {/* Shimmer */}
+      <span style={{
+        position: 'absolute', inset: 0,
+        background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.13) 50%, transparent 70%)',
+        transform: hov ? 'translateX(100%)' : 'translateX(-100%)',
+        transition: 'transform 0.5s ease',
+      }} />
+      {submitting
+        ? <Loader2 size={20} style={{ animation: 'spin 0.8s linear infinite' }} />
+        : <>{label}<ArrowRight size={16} /></>
+      }
+    </button>
   );
 }

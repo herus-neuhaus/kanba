@@ -9,7 +9,6 @@ import { Building2, Zap, LayoutDashboard, Globe, ShieldCheck, Loader2 } from 'lu
 import { AuthLoader } from '@/components/layout/AuthLoader';
 import { WhatsappQRModal } from '@/components/WhatsappQRModal';
 import { supabase } from '@/integrations/supabase/client';
-import LogoWithBg from '@/img/kanba-logo-transparent.png';
 
 export default function Onboarding() {
   const { createAgency, agency, loading } = useAuth();
@@ -25,7 +24,7 @@ export default function Onboarding() {
   useEffect(() => {
     // If we have an agency and NO modal is in progress, redirect to dashboard
     if (!loading && agency && !isModalOpen && !newAgencyId) {
-      navigate('/', { replace: true });
+      navigate('/dashboard', { replace: true });
     }
   }, [agency, navigate, loading, isModalOpen, newAgencyId]);
 
@@ -60,7 +59,7 @@ export default function Onboarding() {
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
       // If error, we still created the agency, so let's allow going to dashboard
-      if (newAgencyId) navigate('/', { replace: true });
+      if (newAgencyId) navigate('/dashboard', { replace: true });
     } finally {
       setSubmitting(false);
     }
@@ -68,7 +67,7 @@ export default function Onboarding() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    navigate('/', { replace: true });
+    navigate('/dashboard', { replace: true });
   };
 
   return (
@@ -81,18 +80,28 @@ export default function Onboarding() {
       <div className="w-full max-w-md space-y-8 animate-in fade-in zoom-in duration-500">
         <div className="flex flex-col items-center text-center space-y-4">
            {/* ... logo code same as before */}
-           <div className="relative group perspective-1000">
-              <div className="absolute inset-0 bg-primary/40 blur-2xl group-hover:bg-primary/60 transition-colors opacity-50" />
-              <div className="relative h-20 w-20 rounded-3xl bg-gradient-to-br from-primary to-primary-foreground p-0.5 shadow-2xl transition-transform hover:scale-110">
-                 <div className="h-full w-full rounded-[1.2rem] bg-background p-2.5 flex items-center justify-center overflow-hidden">
-                    <img src={LogoWithBg} alt="Kanba Logo" className="h-full w-full object-cover rounded-xl" />
-                 </div>
-              </div>
+           <div className="relative flex items-center justify-center" style={{ marginBottom: 8 }}>
+              <div style={{ position: 'absolute', inset: -10, background: 'radial-gradient(circle, rgba(163,81,57,0.35) 0%, transparent 70%)', filter: 'blur(14px)' }} />
+              <img
+                src="/K transparante.png"
+                alt="Kanba"
+                style={{ height: 72, width: 'auto', filter: 'drop-shadow(0 0 16px rgba(163,81,57,0.7))', position: 'relative', zIndex: 1 }}
+              />
            </div>
            
            <div className="space-y-1">
-             <h1 className="text-3xl font-black tracking-tighter uppercase italic">KANBA</h1>
-             <p className="text-[9px] font-black uppercase tracking-[0.4em] text-muted-foreground/60">Configuração Inicial da Central</p>
+             <span style={{
+               display: 'block',
+               fontFamily: "'Oswald', sans-serif",
+               fontWeight: 700,
+               fontSize: '2rem',
+               letterSpacing: '0.14em',
+               background: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
+               WebkitBackgroundClip: 'text',
+               WebkitTextFillColor: 'transparent',
+               lineHeight: 1,
+             }}>KANBA</span>
+             <p className="text-[9px] font-semibold uppercase tracking-[0.3em] text-muted-foreground/50">Configuração Inicial da Central</p>
            </div>
         </div>
 

@@ -63,11 +63,22 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        // Brand shorthand utilities
+        gold:   { DEFAULT: "#B39B6F", bright: "#C9AE7E" },
+        copper: { DEFAULT: "#A35139", light: "#C0634A" },
+        palladian: "#EEE9DF",
+        oatmeal:   { DEFAULT: "#C9C1B1", dim: "#8E8779" },
       },
       borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        lg: "calc(var(--radius) + 2px)", // 6px
+        md: "var(--radius)",              // 4px
+        sm: "2px",
+        xl: "8px",
+        "2xl": "12px",
+      },
+      fontFamily: {
+        heading: ['Oswald', 'system-ui', 'sans-serif'],
+        body:    ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
       },
       keyframes: {
         "accordion-down": { from: { height: "0" }, to: { height: "var(--radix-accordion-content-height)" } },

@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Calendar, MessageSquare } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -18,16 +19,17 @@ const labelColors: Record<string, string> = {
   copy: 'bg-warning/20 text-warning',
   social: 'bg-accent/20 text-accent',
 };
-export function TaskCard({ task, isDragging }: Props) {
+// Moved outside: constant map computed once, not on every render
+const PRIORITY_INFO: Record<string, { border: string; text: string; label: string }> = {
+  alta:  { border: 'border-l-destructive', text: 'text-destructive', label: 'Alta' },
+  media: { border: 'border-l-warning',     text: 'text-warning',     label: 'Média' },
+  baixa: { border: 'border-l-accent',      text: 'text-accent',      label: 'Baixa' },
+};
+
+export const TaskCard = memo(function TaskCard({ task, isDragging }: Props) {
   const isOverdue = task.due_date && isPast(new Date(task.due_date)) && (task as any).status !== 'done';
 
-  const priorityInfo: Record<string, { border: string, text: string, label: string }> = {
-    alta: { border: 'border-l-destructive', text: 'text-destructive', label: 'Alta' },
-    media: { border: 'border-l-warning', text: 'text-warning', label: 'Média' },
-    baixa: { border: 'border-l-accent', text: 'text-accent', label: 'Baixa' },
-  };
-
-  const p = priorityInfo[task.priority || 'baixa'];
+  const p = PRIORITY_INFO[task.priority || 'baixa'] ?? PRIORITY_INFO.baixa;
 
   return (
     <Card className={cn(
@@ -89,4 +91,4 @@ export function TaskCard({ task, isDragging }: Props) {
       </CardContent>
     </Card>
   );
-}
+}); // React.memo — prevents re-render when siblings update during drag

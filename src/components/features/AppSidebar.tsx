@@ -11,12 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
-import LogoImg from '@/img/K logo 512z512.png';
 
 const menuItems = [
-  { title: 'Dashboard', url: '/', icon: LayoutDashboard },
-  { title: 'Projetos', url: '/projetos', icon: FolderKanban },
-  { title: 'Equipe', url: '/team', icon: Users },
+  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
+  { title: 'Projetos',  url: '/projetos',  icon: FolderKanban },
+  { title: 'Equipe',    url: '/team',      icon: Users },
   { title: 'Configurações', url: '/settings', icon: Settings },
 ];
 
@@ -30,13 +29,26 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-background/50 backdrop-blur-xl">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 ring-1 ring-primary/20 overflow-hidden shadow-inner shrink-0">
-            <img src={LogoImg} alt="Kanba logo" className="h-full w-full object-cover" />
+          <div className="h-10 w-10 flex items-center justify-center shrink-0">
+            <img
+              src="/K transparante.png"
+              alt="Kanba"
+              style={{ height: 36, width: 'auto', filter: 'drop-shadow(0 0 8px rgba(163,81,57,0.6))' }}
+            />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
-              <span className="font-black text-xl tracking-tighter leading-none italic">KANBA</span>
-              <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60 leading-tight mt-1">Gestão Inteligente</span>
+              <span style={{
+                fontFamily: "'Oswald', sans-serif",
+                fontWeight: 700,
+                fontSize: '1.3rem',
+                letterSpacing: '0.14em',
+                background: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                lineHeight: 1,
+              }}>KANBA</span>
+              <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.2em', color: '#8E8779', textTransform: 'uppercase', marginTop: 3 }}>Gestão Inteligente</span>
             </div>
           )}
         </div>
@@ -51,7 +63,7 @@ export function AppSidebar() {
                   <SidebarMenuButton asChild className="h-11">
                     <NavLink 
                       to={item.url} 
-                      end={item.url === '/'} 
+                      end={item.url === '/dashboard'} 
                       className="group flex items-center gap-3 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10" 
                       activeClassName="bg-primary/15 text-primary font-bold shadow-sm ring-1 ring-primary/20"
                     >

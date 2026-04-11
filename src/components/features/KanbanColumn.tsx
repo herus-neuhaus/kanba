@@ -1,11 +1,11 @@
+import { memo, useState, useRef, useEffect } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { TaskCard } from './TaskCard';
 import { Button } from '@/components/ui/button';
-import { Plus, MoreHorizontal, Trash, Palette } from 'lucide-react';
+import { Plus, MoreHorizontal, Trash } from 'lucide-react';
 import type { Task, KanbanColumn as IKanbanColumn } from '@/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/use-toast';
-import { useState, useRef, useEffect } from 'react';
 
 interface Props {
   column: IKanbanColumn;
@@ -26,7 +26,7 @@ const COLOR_OPTIONS = [
   { label: 'Laranja', value: 'bg-orange-500/10' },
 ];
 
-export function KanbanColumn({ column, tasks, onTaskClick, onAddTask, onDeleteColumn, onUpdateColumn }: Props) {
+export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskClick, onAddTask, onDeleteColumn, onUpdateColumn }: Props) {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(column.title);
@@ -155,4 +155,4 @@ export function KanbanColumn({ column, tasks, onTaskClick, onAddTask, onDeleteCo
       </Droppable>
     </div>
   );
-}
+}); // React.memo — column only re-renders when its tasks or meta change
