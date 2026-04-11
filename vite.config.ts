@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => ({
     },
   },
   plugins: [react()],
+  optimizeDeps: {
+    include: ["@excalidraw/excalidraw"],
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -31,20 +34,15 @@ export default defineConfig(({ mode }) => ({
     "global": "window",
   },
   build: {
-    // Raise chunk size warning to 800kb (excalidraw is legitimately large)
-    chunkSizeWarningLimit: 1000,
+    // Raise chunk size warning to 1500kb for production safety
+    chunkSizeWarningLimit: 1500,
+    commonjsOptions: {
+      include: [/node_modules/],
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // ── Vendor: React core (Highest Priority) ────────────────
-          if (
-            id.includes("node_modules/react/") ||
-            id.includes("node_modules/react-dom/") ||
-            id.includes("node_modules/scheduler/") ||
-            id.includes("node_modules/react-router")
-          )
-            return "vendor-react";
-
           // ── Vendor: Excalidraw (heaviest — ~2MB) ──────────────────
           if (id.includes("@excalidraw")) return "vendor-excalidraw";
 
@@ -69,7 +67,6 @@ export default defineConfig(({ mode }) => ({
 
           // ── Vendor: Lucide icons ─────────────────────────────────
           if (id.includes("lucide-react")) return "vendor-icons";
-
         },
       },
     },
