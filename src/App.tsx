@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AuthLoader } from "@/components/layout/AuthLoader";
+import { LoadingSplash } from "@/components/layout/LoadingSplash";
 
 // ─────────────────────────────────────────────────────────────
 //  Code-split boundary:
@@ -49,6 +50,7 @@ const queryClient = new QueryClient({
   },
 });
 
+
 function PageLoader() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
@@ -63,28 +65,31 @@ function PageLoader() {
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, profile, agency, loading } = useAuth();
 
-  if (loading && (!session || !profile)) return <PageLoader />;
-  if (!session) return <Navigate to="/" replace />;
+  // We don't check loading here anymore as it's handled at the AppRoutes level
+  // This prevents the "flash" by ensuring this component only runs when auth is resolved.
+  
+  if (!session) return <Navigate to="/auth" replace />;
 
   if (profile?.status === "inactive") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-md w-full bg-card p-12 rounded border border-border text-center shadow-2xl">
-          <div className="mx-auto w-20 h-20 bg-destructive/10 rounded flex items-center justify-center mb-8">
-            <div className="h-10 w-10 text-destructive font-black text-3xl">!</div>
+        <div className="max-w-md w-full bg-card p-12 rounded border border-border text-center shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-destructive" />
+          <div className="mx-auto w-20 h-20 bg-destructive/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 border border-destructive/20">
+            <div className="text-destructive font-black text-4xl">!</div>
           </div>
-          <h1 className="text-3xl font-bold uppercase tracking-tight mb-2">
-            Acesso <span className="text-destructive">Suspenso</span>
+          <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 italic">
+            Acesso <span className="text-destructive not-italic">Interrompido</span>
           </h1>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Sua conta foi inativada pela administração da agência.
+          <p className="text-xs font-bold text-muted-foreground leading-relaxed uppercase tracking-widest opacity-60">
+            Sua conta foi desativada no <br /> protocolo de segurança da agência.
           </p>
-          <div className="mt-8 pt-8 border-t border-border">
+          <div className="mt-8 pt-8 border-t border-border/50">
             <button
-              className="text-xs font-semibold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+              className="text-[10px] font-black uppercase tracking-[0.3em] text-primary hover:text-primary/70 transition-colors"
               onClick={() => (window.location.href = "/auth")}
             >
-              Voltar ao Login
+              ← Reautenticar no Sistema
             </button>
           </div>
         </div>
@@ -92,11 +97,31 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!agency && !loading) return <Navigate to="/onboarding" replace />;
+  // If user linked via invite or finished onboarding, skip it
+  if (profile?.onboarding_completed) {
+    if (profile?.role === "client") return <Navigate to="/cliente/dashboard" replace />;
+    return (
+      <Suspense fallback={<LoadingSplash />}>
+        <DashboardLayout>{children}</DashboardLayout>
+      </Suspense>
+    );
+  }
+
+  // Rule: if no agency and onboarding not completed, go to onboarding
+  if (!agency && !profile?.onboarding_completed) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // If session is recovered but no profile (and loading finished), redirect to auth
+  if (!profile && !loading) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Fallback for edge cases
   if (profile?.role === "client") return <Navigate to="/cliente/dashboard" replace />;
 
   return (
-    <Suspense fallback={<PageLoader />}>
+    <Suspense fallback={<LoadingSplash />}>
       <DashboardLayout>{children}</DashboardLayout>
     </Suspense>
   );
@@ -104,7 +129,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  if (loading) return <PageLoader />;
+  if (loading) return <LoadingSplash />;
   if (session) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
@@ -128,6 +153,12 @@ function ClientRoute({ children }: { children: React.ReactNode }) {
 //  Routes
 // ─────────────────────────────────────────────────────────────
 function AppRoutes() {
+  const { loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSplash />;
+  }
+
   return (
     <Routes>
       {/* ── Rotas Públicas (chunk minúsculo) ── */}

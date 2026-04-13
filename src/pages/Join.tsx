@@ -30,6 +30,9 @@ export default function Join() {
     async function fetchInvite() {
       if (!token) return;
       try {
+        if (token) {
+          localStorage.setItem('invite_token', token);
+        }
         const { data, error: fetchError } = await supabase
           .from('invites')
           .select('*, agency:agencies(name)')

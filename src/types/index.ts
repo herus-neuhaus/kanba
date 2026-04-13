@@ -14,6 +14,7 @@ export interface Profile {
   phone: string | null;
   role: string | null;
   status: string | null;
+  onboarding_completed: boolean | null;
   created_at: string | null;
 }
 

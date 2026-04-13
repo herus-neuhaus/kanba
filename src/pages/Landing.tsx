@@ -9,27 +9,27 @@ import {
    DESIGN TOKENS
 ═══════════════════════════════════════════════ */
 const C = {
-  bg: '#212F3D',
-  bgDeep: '#172028',
-  bgDeeper: '#111922',
-  bgCard: '#2A3A4C',
-  bgCardLight: '#30435A',
-  palladian: '#EEE9DF',
-  oatmeal: '#C9C1B1',
-  oatmealDim: '#8E8779',
-  gold: '#B39B6F',
-  goldBright: '#C9AE7E',
-  copper: '#A35139',
-  copperLight: '#C0634A',
-  // CTA gradients — richer, more metallic
-  gradientCta: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
-  gradientCtaHov: 'linear-gradient(135deg, #9E4733 0%, #B8634A 35%, #C5AC80 75%, #D4BC90 100%)',
-  borderSubtle: 'rgba(179,155,111,0.22)',
-  borderCard: 'rgba(238,233,223,0.08)',
-  // Radial copper glows reused across sections
-  glowHero: 'radial-gradient(ellipse 900px 600px at 50% 50%, rgba(163,81,57,0.18) 0%, rgba(44,59,77,0.0) 70%)',
-  glowBA: 'radial-gradient(ellipse 1200px 400px at 50% 60%, rgba(163,81,57,0.12) 0%, transparent 70%)',
-  glowFooter: 'radial-gradient(ellipse 800px 500px at 50% 40%, rgba(163,81,57,0.20) 0%, transparent 65%)',
+  bg: '#020617',         // Slate 950
+  bgDeep: '#0f172a',     // Slate 900
+  bgDeeper: '#010409',   // Near black
+  bgCard: '#1e293b',     // Slate 800
+  bgCardLight: '#334155', // Slate 700
+  palladian: '#f8fafc',  // Slate 50
+  oatmeal: '#94a3b8',    // Slate 400
+  oatmealDim: '#64748b', // Slate 500
+  gold: '#FBBF24',      // Vibrant Gold (Amber 400)
+  goldBright: '#FDE047', // Yellow 300
+  copper: '#D97706',     // Amber 600
+  copperLight: '#F59E0B', // Amber 500
+  // CTA gradients
+  gradientCta: 'linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FBBF24 75%, #FDE047 100%)',
+  gradientCtaHov: 'linear-gradient(135deg, #B45309 0%, #D97706 35%, #F59E0B 75%, #FBBF24 100%)',
+  borderSubtle: 'rgba(148, 163, 184, 0.12)',
+  borderCard: 'rgba(148, 163, 184, 0.08)',
+  // Glows updated to Amber
+  glowHero: 'radial-gradient(ellipse 900px 600px at 50% 50%, rgba(251,191,36,0.08) 0%, rgba(15,23,42,0.0) 70%)',
+  glowBA: 'radial-gradient(ellipse 1200px 400px at 50% 60%, rgba(251,191,36,0.06) 0%, transparent 70%)',
+  glowFooter: 'radial-gradient(ellipse 800px 500px at 50% 40%, rgba(251,191,36,0.12) 0%, transparent 65%)',
 };
 
 /* ═══════════════════════════════════════════════
@@ -64,7 +64,7 @@ function CtaButton({ label = 'TESTAR O KANBA GRÁTIS', size = 'lg' }: { label?: 
         style={{
           background: hov ? C.gradientCtaHov : C.gradientCta,
           color: C.palladian,
-          fontFamily: "'Oswald', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           fontWeight: 700,
           fontSize: isLg ? '1.15rem' : '0.95rem',
           letterSpacing: '0.1em',
@@ -127,7 +127,7 @@ function MockDashboard() {
         <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#E5A82D', display: 'inline-block' }} />
         <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#4CAF50', display: 'inline-block' }} />
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '3px 16px', fontSize: '0.62rem', color: C.oatmealDim, fontFamily: "'Poppins',sans-serif", letterSpacing: '0.06em' }}>
+          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '3px 16px', fontSize: '0.62rem', color: C.oatmealDim, fontFamily: "'Inter',sans-serif", letterSpacing: '0.06em' }}>
             🔒 kanba.app · Painel de Demandas
           </div>
         </div>
@@ -138,18 +138,18 @@ function MockDashboard() {
           <div key={col.title} style={{ minWidth: 145, flex: 1, background: C.bgCard, borderRadius: 7, border: `1px solid ${C.borderCard}`, padding: '10px 10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color, flexShrink: 0, display: 'inline-block' }} />
-              <span style={{ fontSize: '0.55rem', fontFamily: "'Oswald',sans-serif", color: C.oatmealDim, letterSpacing: '0.09em', fontWeight: 600 }}>{col.title.toUpperCase()}</span>
+              <span style={{ fontSize: '0.55rem', fontFamily: "'Inter',sans-serif", color: C.oatmealDim, letterSpacing: '0.09em', fontWeight: 600 }}>{col.title.toUpperCase()}</span>
               <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(255,255,255,0.07)', borderRadius: 3, padding: '1px 5px', color: C.oatmealDim }}>{col.tasks.length}</span>
             </div>
             {col.tasks.map(({ t, p }) => (
               <div key={t} style={{ background: C.bgDeep, borderRadius: 5, padding: '8px 9px', borderLeft: `2px solid ${col.color}`, position: 'relative' }}>
                 <div style={{ position: 'absolute', top: 6, right: 7, width: 5, height: 5, borderRadius: '50%', background: priorityColor[p] }} />
-                <span style={{ fontSize: '0.57rem', color: C.palladian, fontFamily: "'Poppins',sans-serif", lineHeight: 1.45, display: 'block', paddingRight: 10 }}>{t}</span>
+                <span style={{ fontSize: '0.57rem', color: C.palladian, fontFamily: "'Inter',sans-serif", lineHeight: 1.45, display: 'block', paddingRight: 10 }}>{t}</span>
                 <div style={{ marginTop: 7, display: 'flex', gap: 4, alignItems: 'center' }}>
                   {[1, 2].map(i => (
                     <span key={i} style={{ width: 15, height: 15, borderRadius: '50%', background: `hsl(${i * 55 + 195}, 45%, 48%)`, display: 'inline-block', border: `1.5px solid ${C.bgDeep}` }} />
                   ))}
-                  <span style={{ fontSize: '0.48rem', color: C.oatmealDim, marginLeft: 2, fontFamily: "'Poppins',sans-serif" }}>Due 15/05</span>
+                  <span style={{ fontSize: '0.48rem', color: C.oatmealDim, marginLeft: 2, fontFamily: "'Inter',sans-serif" }}>Due 15/05</span>
                 </div>
               </div>
             ))}
@@ -162,8 +162,8 @@ function MockDashboard() {
           <MessageSquare size={16} color="#fff" />
         </div>
         <div>
-          <p style={{ fontSize: '0.62rem', color: '#4CAF50', fontFamily: "'Poppins',sans-serif", margin: 0, fontWeight: 600 }}>✓ Notificação automática enviada · Agora</p>
-          <p style={{ fontSize: '0.57rem', color: C.oatmeal, fontFamily: "'Poppins',sans-serif", margin: 0 }}>
+          <p style={{ fontSize: '0.62rem', color: '#4CAF50', fontFamily: "'Inter',sans-serif", margin: 0, fontWeight: 600 }}>✓ Notificação automática enviada · Agora</p>
+          <p style={{ fontSize: '0.57rem', color: C.oatmeal, fontFamily: "'Inter',sans-serif", margin: 0 }}>
             📋 <b>"Post Feed – Semana 18"</b> movida para <b style={{ color: C.gold }}>Em Aprovação</b>. Responsável: João Silva
           </p>
         </div>
@@ -177,7 +177,7 @@ function MockDashboard() {
 ═══════════════════════════════════════════════ */
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ textAlign: 'center', fontSize: '0.68rem', color: C.gold, letterSpacing: '0.2em', fontFamily: "'Oswald',sans-serif", textTransform: 'uppercase', marginBottom: 20, margin: '0 0 20px' }}>
+    <p style={{ textAlign: 'center', fontSize: '0.68rem', color: C.gold, letterSpacing: '0.2em', fontFamily: "'Inter',sans-serif", textTransform: 'uppercase', marginBottom: 20, margin: '0 0 20px' }}>
       {children}
     </p>
   );
@@ -216,8 +216,8 @@ function BentoCard({ icon, iconBg, tag, title, body, accent, extra, style }: {
           {icon}
         </div>
         <div style={{ flex: 1 }}>
-          <p style={{ margin: '0 0 7px', fontSize: '0.62rem', color: accent, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>{tag}</p>
-          <h3 style={{ margin: '0 0 10px', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.15rem', color: C.palladian, lineHeight: 1.2 }}>{title}</h3>
+          <p style={{ margin: '0 0 7px', fontSize: '0.62rem', color: accent, fontFamily: "'Inter',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>{tag}</p>
+          <h3 style={{ margin: '0 0 10px', fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: '1.15rem', color: C.palladian, lineHeight: 1.2 }}>{title}</h3>
           <p style={{ margin: 0, fontSize: '0.87rem', color: C.oatmeal, lineHeight: 1.65, fontWeight: 300 }}>{body}</p>
         </div>
       </div>
@@ -246,12 +246,9 @@ export default function Landing() {
   }, []);
 
   return (
-    <div style={{ fontFamily: "'Poppins',sans-serif", background: C.bg, color: C.palladian, minHeight: '100vh', overflowX: 'hidden' }}>
+    <div style={{ fontFamily: "'Inter',sans-serif", background: C.bg, color: C.palladian, minHeight: '100vh', overflowX: 'hidden' }}>
 
-      {/* ── FONTS ── */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+      {/* Fonts are globally imported in index.css */}
 
       {/* ══════════════════════════════════════════
           NAVBAR
@@ -267,14 +264,14 @@ export default function Landing() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img src="/K transparante.png" alt="K" style={{ height: 34, filter: 'drop-shadow(0 0 10px rgba(163,81,57,0.65))' }} />
-          <span style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.5rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: '1.5rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             KANBA
           </span>
         </div>
         <Link
           to="/auth"
           style={{
-            fontFamily: "'Poppins',sans-serif", fontSize: '0.83rem', fontWeight: 500,
+            fontFamily: "'Inter',sans-serif", fontSize: '0.83rem', fontWeight: 500,
             color: C.oatmeal, border: `1px solid ${C.borderSubtle}`,
             padding: '8px 24px', borderRadius: '3px',
             textDecoration: 'none', letterSpacing: '0.04em', transition: 'all 0.22s',
@@ -309,14 +306,14 @@ export default function Landing() {
           {/* Badge */}
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${C.gold}`, background: 'rgba(179,155,111,0.09)', padding: '6px 18px', borderRadius: '3px', marginBottom: 36 }}>
             <ShieldCheck size={14} color={C.gold} />
-            <span style={{ fontSize: '0.7rem', color: C.gold, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.12em', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.7rem', color: C.gold, fontFamily: "'Inter',sans-serif", letterSpacing: '0.12em', fontWeight: 600 }}>
               EXCLUSIVO PARA AGÊNCIAS DE MARKETING
             </span>
           </div>
 
           {/* MASSIVE H1 */}
           <h1 style={{
-            fontFamily: "'Oswald',sans-serif",
+            fontFamily: "'Inter',sans-serif",
             fontWeight: 700,
             fontSize: 'clamp(3rem, 8vw, 7rem)',
             lineHeight: 1.02,
@@ -381,13 +378,13 @@ export default function Landing() {
         }}
       >
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-          <p style={{ textAlign: 'center', fontSize: '0.78rem', color: C.oatmealDim, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: "'Oswald',sans-serif", marginBottom: 26 }}>
+          <p style={{ textAlign: 'center', fontSize: '0.78rem', color: C.oatmealDim, letterSpacing: '0.14em', textTransform: 'uppercase', fontFamily: "'Inter',sans-serif", marginBottom: 26 }}>
             Junte-se a dezenas de agências que pararam de apagar incêndios:
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 'clamp(28px,5vw,72px)', flexWrap: 'wrap' }}>
             {AGENCIES.map(name => (
               <span key={name} style={{
-                fontFamily: "'Oswald',sans-serif", fontWeight: 600,
+                fontFamily: "'Inter',sans-serif", fontWeight: 600,
                 fontSize: 'clamp(0.9rem, 1.8vw, 1.15rem)',
                 color: C.oatmeal, letterSpacing: '0.12em', textTransform: 'uppercase',
                 borderBottom: `1px solid ${C.borderSubtle}`, paddingBottom: 6, opacity: 0.7,
@@ -418,7 +415,7 @@ export default function Landing() {
 
           {/* MASSIVE H2 */}
           <h2 style={{
-            fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+            fontFamily: "'Inter',sans-serif", fontWeight: 700,
             fontSize: 'clamp(2.4rem, 5.5vw, 5rem)',
             color: C.palladian, textAlign: 'center', lineHeight: 1.05,
             margin: '0 auto 64px', maxWidth: 900,
@@ -436,7 +433,7 @@ export default function Landing() {
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(224,90,76,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(224,90,76,0.3)' }}>
                   <X size={18} color="#E05A4C" />
                 </div>
-                <h3 style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, color: '#E05A4C', fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO ANTIGO</h3>
+                <h3 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, color: '#E05A4C', fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO ANTIGO</h3>
               </div>
               {['Demandas perdidas no WhatsApp do grupo', 'Clientes ansiosos cobrando status o dia todo', 'Equipe sem saber o que priorizar', 'Prazos estourados sem ninguém avisar', 'Reuniões longas para alinhar o básico'].map(item => (
                 <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 18 }}>
@@ -457,7 +454,7 @@ export default function Landing() {
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(179,155,111,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(179,155,111,0.35)` }}>
                   <CheckCircle2 size={18} color={C.gold} />
                 </div>
-                <h3 style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, color: C.gold, fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO KANBA</h3>
+                <h3 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, color: C.gold, fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO KANBA</h3>
               </div>
               {['Kanban visual: todo mundo sabe o que está acontecendo', 'Equipe e prestadores notificados no automático via WhatsApp', 'Prioridades claras e prazos visíveis para toda equipe', 'Alertas automáticos antes do prazo vencer', 'Tudo em um só lugar. Sem reuniões desnecessárias.'].map(item => (
                 <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 18 }}>
@@ -498,7 +495,7 @@ export default function Landing() {
 
           {/* MASSIVE H2 */}
           <h2 style={{
-            fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+            fontFamily: "'Inter',sans-serif", fontWeight: 700,
             fontSize: 'clamp(2.2rem, 4.5vw, 4.2rem)',
             color: C.palladian, textAlign: 'center',
             margin: '0 auto 60px',
@@ -524,8 +521,8 @@ export default function Landing() {
                       <MessageSquare size={19} color="#fff" />
                     </div>
                     <div>
-                      <p style={{ margin: 0, fontSize: '0.73rem', color: '#4CAF50', fontWeight: 600, fontFamily: "'Poppins',sans-serif" }}>✓ Kanba · Enviado agora</p>
-                      <p style={{ margin: 0, fontSize: '0.7rem', color: C.oatmeal, fontFamily: "'Poppins',sans-serif" }}>
+                      <p style={{ margin: 0, fontSize: '0.73rem', color: '#4CAF50', fontWeight: 600, fontFamily: "'Inter',sans-serif" }}>✓ Kanba · Enviado agora</p>
+                      <p style={{ margin: 0, fontSize: '0.7rem', color: C.oatmeal, fontFamily: "'Inter',sans-serif" }}>
                         📋 <b>"Post Feed – Semana 18"</b> movida para <b style={{ color: C.gold }}>Em Aprovação</b>.<br />Responsável: João Silva
                       </p>
                     </div>
@@ -575,8 +572,8 @@ export default function Landing() {
               <div style={{ width: 52, height: 52, borderRadius: '8px', background: 'rgba(197,193,177,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(197,193,177,0.2)`, marginBottom: 14 }}>
                 <Clock size={28} color={C.palladian} />
               </div>
-              <p style={{ margin: '0 0 6px', fontSize: '0.62rem', color: C.oatmeal, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>PRAZOS</p>
-              <h3 style={{ margin: '0 0 10px', fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.15rem', color: C.palladian, lineHeight: 1.2 }}>Alertas de Entrega</h3>
+              <p style={{ margin: '0 0 6px', fontSize: '0.62rem', color: C.oatmeal, fontFamily: "'Inter',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>PRAZOS</p>
+              <h3 style={{ margin: '0 0 10px', fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: '1.15rem', color: C.palladian, lineHeight: 1.2 }}>Alertas de Entrega</h3>
               <p style={{ margin: 0, fontSize: '0.87rem', color: C.oatmeal, lineHeight: 1.65, fontWeight: 300 }}>Sistema identifica tarefas atrasadas e destaca antes que o cliente precise cobrar.</p>
             </div>
           </div>
@@ -606,12 +603,12 @@ export default function Landing() {
         <div style={{ maxWidth: 860, margin: '0 auto', position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 9, border: `1px solid ${C.borderSubtle}`, background: 'rgba(179,155,111,0.07)', padding: '7px 20px', borderRadius: '3px', marginBottom: 32 }}>
             <Zap size={14} color={C.gold} />
-            <span style={{ fontSize: '0.7rem', color: C.gold, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>COMECE GRATUITAMENTE HOJE</span>
+            <span style={{ fontSize: '0.7rem', color: C.gold, fontFamily: "'Inter',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>COMECE GRATUITAMENTE HOJE</span>
           </div>
 
           {/* MASSIVE headline */}
           <h2 style={{
-            fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+            fontFamily: "'Inter',sans-serif", fontWeight: 700,
             fontSize: 'clamp(2.4rem, 5.5vw, 5.2rem)',
             color: C.palladian, lineHeight: 1.05,
             margin: '0 0 26px',
@@ -646,7 +643,7 @@ export default function Landing() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img src="/K transparante.png" alt="Kanba" style={{ height: 24, opacity: 0.65 }} />
-          <span style={{ fontFamily: "'Oswald',sans-serif", fontSize: '0.95rem', color: C.oatmealDim, letterSpacing: '0.12em' }}>KANBA</span>
+          <span style={{ fontFamily: "'Inter',sans-serif", fontSize: '0.95rem', color: C.oatmealDim, letterSpacing: '0.12em' }}>KANBA</span>
         </div>
         <span style={{ fontSize: '0.75rem', color: C.oatmealDim }}>© 2025 Kanba · Todos os direitos reservados</span>
         <Link to="/auth" style={{ fontSize: '0.75rem', color: C.oatmealDim, textDecoration: 'none', transition: 'color 0.2s' }}

@@ -1,5 +1,5 @@
 /* Google Fonts — must be first, before @tailwind directives */
-@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -25,57 +25,56 @@
 @layer base {
   :root {
     /* ── Backgrounds ── */
-    --background:        210 30% 19%;   /* #212F3D Blue Fantastic     */
-    --foreground:        40  33% 91%;   /* #EEE9DF Palladian          */
+    --background:        222 47% 4%;    /* #020617 Deep Slate     */
+    --foreground:        210 40% 98%;   /* Slate 50               */
 
-    --card:              210 29% 23%;   /* #2A3A4C card surface       */
-    --card-foreground:   40  33% 91%;
+    --card:              222 47% 11%;   /* #0F172A Slate 900      */
+    --card-foreground:   210 40% 98%;
 
-    --popover:           210 28% 14%;   /* #1E2B38 popover darker     */
-    --popover-foreground: 40 33% 91%;
+    --popover:           222 47% 7%;    /* Slightly off-black     */
+    --popover-foreground: 210 40% 98%;
 
-    /* ── Brand: Antique Gold as primary ── */
-    --primary:           37  34% 57%;   /* #B39B6F Antique Gold       */
-    --primary-foreground: 210 30% 12%; /* dark text on gold badge    */
+    /* ── Brand: Vibrant Gold as primary ── */
+    --primary:           45 96% 56%;    /* #FBBF24 Amber-400      */
+    --primary-foreground: 222 47% 4%;   /* Deep dark text on gold */
 
     /* ── Secondary / Muted ── */
-    --secondary:         210 24% 28%;   /* #344657 slightly lighter   */
-    --secondary-foreground: 38 18% 74%;
+    --secondary:         217 33% 17%;   /* #1E293B Slate 800      */
+    --secondary-foreground: 215 16% 65%;
 
-    --muted:             210 24% 25%;   /* #303F50                    */
-    --muted-foreground:  37  8%  52%;   /* #8E8779 oatmeal dim        */
+    --muted:             217 33% 15%;   /* #1A2234                */
+    --muted-foreground:  215 16% 65%;   /* #94A3B8 Slate 400      */
 
-    /* ── Accent: Copper ── */
-    --accent:            16  49% 43%;   /* #A35139 copper             */
-    --accent-foreground: 40  33% 91%;
+    /* ── Accent ── */
+    --accent:            217 33% 17%;   /* #1E293B Slate 800      */
+    --accent-foreground: 210 40% 98%;
 
     /* ── Destructive ── */
-    --destructive:       0   72% 58%;   /* warm red                   */
-    --destructive-foreground: 40 33% 91%;
+    --destructive:       0 84% 60%;     /* Vibrant Red            */
+    --destructive-foreground: 210 40% 98%;
 
     /* ── Borders & inputs ── */
-    --border:            210 18% 36%;   /* visible on card surface     */
-    --input:             210 30% 14%;   /* input bg slightly darker    */
-    --ring:              37  34% 57%;   /* focus ring = gold           */
+    --border:            215 25% 27%;   /* #334155 Slate 700      */
+    --input:             215 25% 27%;
+    --ring:              45 96% 56%;    /* Gold Ring              */
 
-    /* ── Corner radius — reto "Old Money" ── */
-    --radius: 0.25rem;
+    --radius: 0.5rem;
 
     /* ── Success / Warning ── */
-    --success:           152 55% 39%;
-    --success-foreground: 40 33% 91%;
-    --warning:           38  92% 52%;
-    --warning-foreground: 210 30% 12%;
+    --success:           142 71% 45%;
+    --success-foreground: 210 40% 98%;
+    --warning:           48 96% 53%;
+    --warning-foreground: 222 47% 4%;
 
     /* ── Sidebar ── */
-    --sidebar-background:         210 30% 14%;   /* #1A2738 deep navy  */
-    --sidebar-foreground:         38  18% 74%;   /* oatmeal            */
-    --sidebar-primary:            37  34% 57%;   /* gold               */
-    --sidebar-primary-foreground: 40  33% 91%;
-    --sidebar-accent:             210 24% 22%;   /* hover slot         */
-    --sidebar-accent-foreground:  40  33% 91%;
-    --sidebar-border:             210 22% 22%;
-    --sidebar-ring:               37  34% 57%;
+    --sidebar-background:         222 47% 4%;
+    --sidebar-foreground:         215 16% 65%;
+    --sidebar-primary:            45 96% 56%;
+    --sidebar-primary-foreground: 222 47% 4%;
+    --sidebar-accent:             217 33% 17%;
+    --sidebar-accent-foreground:  210 40% 98%;
+    --sidebar-border:             215 25% 27%;
+    --sidebar-ring:               45 96% 56%;
   }
 }
 
@@ -86,14 +85,16 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: 'Poppins', 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'cv11', 'ss01';
     font-weight: 400;
   }
 
   /* Apply Oswald to all headings */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Oswald', 'Inter', system-ui, sans-serif;
-    letter-spacing: -0.01em;
+    font-family: 'Inter', system-ui, sans-serif;
+    letter-spacing: -0.02em;
+    font-weight: 600;
   }
 }
 
@@ -143,7 +144,7 @@
 .react-international-phone-country-selector-list-item {
   background: transparent !important;
   color: #C9C1B1 !important;
-  font-family: 'Poppins', sans-serif !important;
+  font-family: 'Inter', sans-serif !important;
   font-size: 0.82rem !important;
   padding: 7px 14px !important;
   transition: background 0.15s !important;

@@ -17,23 +17,23 @@ import 'react-international-phone/style.css';
    Design tokens
 ───────────────────────────────────────── */
 const C = {
-  bg: '#212F3D',
-  bgDeep: '#172028',
-  bgDeeper: '#111922',
-  bgCard: '#2A3A4C',
-  bgInput: '#1C2A38',
-  palladian: '#EEE9DF',
-  oatmeal: '#C9C1B1',
-  oatmealDim: '#8E8779',
-  gold: '#B39B6F',
-  goldBright: '#C9AE7E',
-  copper: '#A35139',
-  success: '#4ade80',
-  borderSubtle: 'rgba(179,155,111,0.22)',
-  borderCard: 'rgba(238,233,223,0.08)',
-  gradientCta: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
-  gradientCtaHov: 'linear-gradient(135deg, #9E4733 0%, #B8634A 35%, #C5AC80 75%, #D4BC90 100%)',
-  glowRadial: 'radial-gradient(ellipse 700px 500px at 50% 30%, rgba(163,81,57,0.16) 0%, transparent 70%)',
+  bg: '#020617',         // Slate 950
+  bgDeep: '#0f172a',     // Slate 900
+  bgDeeper: '#010409',   // Near black
+  bgCard: '#1e293b',     // Slate 800
+  bgInput: '#020617',    // Input same as bg
+  palladian: '#f8fafc',  // Slate 50
+  oatmeal: '#94a3b8',    // Slate 400
+  oatmealDim: '#64748b', // Slate 500
+  gold: '#FBBF24',      // Vibrant Gold (Amber 400)
+  goldBright: '#FDE047', // Yellow 300
+  copper: '#D97706',     // Amber 600
+  success: '#22c55e',    // Vibrant Green
+  borderSubtle: 'rgba(148, 163, 184, 0.12)',
+  borderCard: 'rgba(148, 163, 184, 0.08)',
+  gradientCta: 'linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FBBF24 75%, #FDE047 100%)',
+  gradientCtaHov: 'linear-gradient(135deg, #B45309 0%, #D97706 35%, #F59E0B 75%, #FBBF24 100%)',
+  glowRadial: 'radial-gradient(ellipse 700px 500px at 50% 30%, rgba(251,191,36,0.08) 0%, transparent 70%)',
 };
 
 /* ─────────────────────────────────────────
@@ -244,7 +244,7 @@ function InternationalPhoneInput({
           border: `1px solid ${error ? '#ef4444' : (focused ? C.gold : 'rgba(238,233,223,0.06)')}`,
           borderRadius: '4px',
           color: C.palladian,
-          fontFamily: "'Poppins', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           fontSize: '0.9rem',
           paddingLeft: '54px',
           outline: 'none',
@@ -353,7 +353,7 @@ const AuthInput = React.forwardRef<HTMLInputElement, AuthInputProps>(
             border: `1px solid ${error ? '#ef4444' : (focused ? C.gold : 'rgba(238,233,223,0.06)')}`,
             borderRadius: 4,
             color: C.palladian,
-            fontFamily: "'Poppins', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: '0.9rem',
             fontWeight: 400,
             outline: 'none',
@@ -396,7 +396,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
   fontSize: '0.72rem',
   color: C.oatmealDim,
-  fontFamily: "'Oswald', sans-serif",
+  fontFamily: "'Inter', sans-serif",
   letterSpacing: '0.10em',
   textTransform: 'uppercase',
   marginBottom: 6,
@@ -500,12 +500,9 @@ export default function Auth() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: C.bg, fontFamily: "'Poppins', sans-serif", overflow: 'hidden' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%', background: C.bg, fontFamily: "'Inter', sans-serif", overflow: 'hidden' }}>
 
-      {/* Google Fonts */}
-      <link rel="preconnect" href="https://fonts.googleapis.com" />
-      <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-      <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
+      {/* Fonts are globally imported in index.css */}
 
       {/* ══════════════════════════════════════
           LEFT COLUMN — Brand panel
@@ -536,7 +533,7 @@ export default function Auth() {
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, position: 'relative', zIndex: 1 }}>
           <img src="/K transparante.png" alt="K" style={{ height: 36, filter: 'drop-shadow(0 0 10px rgba(163,81,57,0.6))' }} />
-          <span style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.5rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: '1.5rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             KANBA
           </span>
         </div>
@@ -544,12 +541,12 @@ export default function Auth() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative', zIndex: 1, marginTop: 60 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: `1px solid ${C.borderSubtle}`, background: 'rgba(179,155,111,0.07)', padding: '5px 14px', borderRadius: 3, marginBottom: 28, alignSelf: 'flex-start' }}>
             <ShieldCheck size={13} color={C.gold} />
-            <span style={{ fontSize: '0.65rem', color: C.gold, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.12em', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.65rem', color: C.gold, fontFamily: "'Inter', sans-serif", letterSpacing: '0.12em', fontWeight: 600 }}>
               EXCLUSIVO PARA AGÊNCIAS
             </span>
           </div>
 
-          <h2 style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 'clamp(2.8rem, 4vw, 4.5rem)', lineHeight: 1.03, color: C.palladian, margin: '0 0 24px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 'clamp(2.8rem, 4vw, 4.5rem)', lineHeight: 1.03, color: C.palladian, margin: '0 0 24px', letterSpacing: '-0.02em' }}>
             Acesse sua<br />
             <span style={{ background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>central de</span>
             <br />comando.
@@ -591,7 +588,7 @@ export default function Auth() {
         {/* Mobile-only logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 48, position: 'relative', zIndex: 1 }} className="auth-mobile-logo">
           <img src="/K transparante.png" alt="K" style={{ height: 30, filter: 'drop-shadow(0 0 8px rgba(163,81,57,0.5))' }} />
-          <span style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: '1.3rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
             KANBA
           </span>
         </div>
@@ -613,10 +610,10 @@ export default function Auth() {
 
           {/* Header */}
           <div style={{ marginBottom: 28 }}>
-            <p style={{ fontSize: '0.65rem', color: C.gold, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.16em', fontWeight: 600, margin: '0 0 10px', textTransform: 'uppercase' }}>
+            <p style={{ fontSize: '0.65rem', color: C.gold, fontFamily: "'Inter', sans-serif", letterSpacing: '0.16em', fontWeight: 600, margin: '0 0 10px', textTransform: 'uppercase' }}>
               {isSignUp ? 'CRIAR CONTA' : 'ACESSO À PLATAFORMA'}
             </p>
-            <h1 style={{ fontFamily: "'Oswald',sans-serif", fontWeight: 700, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: C.palladian, margin: 0, letterSpacing: '-0.01em', lineHeight: 1.05 }}>
+            <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: C.palladian, margin: 0, letterSpacing: '-0.01em', lineHeight: 1.05 }}>
               {isSignUp ? 'Começar agora.' : 'Entrar.'}
             </h1>
             <p style={{ fontSize: '0.85rem', color: C.oatmealDim, margin: '10px 0 0', fontWeight: 300 }}>
@@ -739,7 +736,7 @@ export default function Auth() {
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0' }}>
             <div style={{ flex: 1, height: 1, background: C.borderCard }} />
-            <span style={{ fontSize: '0.65rem', color: C.oatmealDim, fontFamily: "'Oswald',sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>ou</span>
+            <span style={{ fontSize: '0.65rem', color: C.oatmealDim, fontFamily: "'Inter', sans-serif", letterSpacing: '0.12em', textTransform: 'uppercase' }}>ou</span>
             <div style={{ flex: 1, height: 1, background: C.borderCard }} />
           </div>
 
@@ -752,7 +749,7 @@ export default function Auth() {
               background: 'transparent',
               border: `1px solid ${C.borderSubtle}`,
               borderRadius: 4,
-              fontFamily: "'Oswald',sans-serif",
+              fontFamily: "'Inter', sans-serif",
               fontWeight: 600, fontSize: '0.85rem',
               letterSpacing: '0.1em', textTransform: 'uppercase',
               color: C.oatmeal, cursor: 'pointer',
@@ -850,7 +847,7 @@ function SubmitButton({ submitting, label }: { submitting: boolean; label: strin
         background: submitting ? 'rgba(163,81,57,0.5)' : (hov ? gradHov : gradCta),
         border: 'none', borderRadius: 4,
         cursor: submitting ? 'not-allowed' : 'pointer',
-        fontFamily: "'Oswald',sans-serif", fontWeight: 700,
+        fontFamily: "'Inter', sans-serif", fontWeight: 700,
         fontSize: '0.95rem', letterSpacing: '0.1em', textTransform: 'uppercase',
         color: '#EEE9DF',
         boxShadow: hov && !submitting

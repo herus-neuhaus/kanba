@@ -33,22 +33,22 @@ export function AppSidebar() {
             <img
               src="/K transparante.png"
               alt="Kanba"
-              style={{ height: 36, width: 'auto', filter: 'drop-shadow(0 0 8px rgba(163,81,57,0.6))' }}
+              style={{ height: 36, width: 'auto', filter: 'drop-shadow(0 0 12px rgba(251,191,36,0.4))' }}
             />
           </div>
           {!collapsed && (
             <div className="flex flex-col">
               <span style={{
-                fontFamily: "'Oswald', sans-serif",
-                fontWeight: 700,
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: 800,
                 fontSize: '1.3rem',
                 letterSpacing: '0.14em',
-                background: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
+                background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FBBF24 75%, #FDE047 100%)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
                 lineHeight: 1,
               }}>KANBA</span>
-              <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.2em', color: '#8E8779', textTransform: 'uppercase', marginTop: 3 }}>Gestão Inteligente</span>
+              <span style={{ fontSize: '0.55rem', fontWeight: 600, letterSpacing: '0.2em', color: '#64748b', textTransform: 'uppercase', marginTop: 3 }}>Gestão Inteligente</span>
             </div>
           )}
         </div>

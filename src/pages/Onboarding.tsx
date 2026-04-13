@@ -81,22 +81,22 @@ export default function Onboarding() {
         <div className="flex flex-col items-center text-center space-y-4">
            {/* ... logo code same as before */}
            <div className="relative flex items-center justify-center" style={{ marginBottom: 8 }}>
-              <div style={{ position: 'absolute', inset: -10, background: 'radial-gradient(circle, rgba(163,81,57,0.35) 0%, transparent 70%)', filter: 'blur(14px)' }} />
+              <div style={{ position: 'absolute', inset: -10, background: 'radial-gradient(circle, rgba(251,191,36,0.15) 0%, transparent 70%)', filter: 'blur(14px)' }} />
               <img
                 src="/K transparante.png"
                 alt="Kanba"
-                style={{ height: 72, width: 'auto', filter: 'drop-shadow(0 0 16px rgba(163,81,57,0.7))', position: 'relative', zIndex: 1 }}
+                style={{ height: 72, width: 'auto', filter: 'drop-shadow(0 0 16px rgba(251,191,36,0.4))', position: 'relative', zIndex: 1 }}
               />
            </div>
            
            <div className="space-y-1">
              <span style={{
                display: 'block',
-               fontFamily: "'Oswald', sans-serif",
-               fontWeight: 700,
+               fontFamily: "'Inter', sans-serif",
+               fontWeight: 800,
                fontSize: '2rem',
                letterSpacing: '0.14em',
-               background: 'linear-gradient(135deg, #8B3B26 0%, #A35139 35%, #B39B6F 75%, #C9AE7E 100%)',
+               background: 'linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FBBF24 75%, #FDE047 100%)',
                WebkitBackgroundClip: 'text',
                WebkitTextFillColor: 'transparent',
                lineHeight: 1,

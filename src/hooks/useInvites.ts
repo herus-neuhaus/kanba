@@ -41,7 +41,8 @@ export function useInvites() {
       const { error: profileError } = await supabase.from('profiles').update({ 
         agency_id: invite.agency_id, 
         role: invite.role,
-        status: 'active'
+        status: 'active',
+        onboarding_completed: true
       }).eq('id', user.id);
       
       if (profileError) throw profileError;
