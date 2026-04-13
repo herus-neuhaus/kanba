@@ -25,15 +25,14 @@ export function useColumns(projectId: string | undefined) {
   });
 
   const createColumn = useMutation({
-    mutationFn: async ({ title, order_index, color }: { title: string; order_index: number; color: string }) => {
+    mutationFn: async ({ title, order_index, color, is_done = false }: { title: string; order_index: number; color: string; is_done?: boolean }) => {
       if (!projectId || !agency) throw new Error('Dados inválidos para criar coluna');
       const { data, error } = await supabase
         .from('kanban_columns')
-        .insert({ project_id: projectId, title, order_index, color })
-        .select()
-        .single();
+        .insert({ project_id: projectId, title, order_index, color, is_done })
+        .select();
       if (error) throw error;
-      return data as KanbanColumn;
+      return (data ? data[0] : null) as KanbanColumn;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['columns', projectId] });
@@ -49,20 +48,20 @@ export function useColumns(projectId: string | undefined) {
   });
 
   const updateColumn = useMutation({
-    mutationFn: async ({ id, title, color, order_index }: { id: string; title?: string; color?: string; order_index?: number }) => {
+    mutationFn: async ({ id, title, color, order_index, is_done }: { id: string; title?: string; color?: string; order_index?: number; is_done?: boolean }) => {
       const updates: any = {};
       if (title !== undefined) updates.title = title;
       if (color !== undefined) updates.color = color;
       if (order_index !== undefined) updates.order_index = order_index;
+      if (is_done !== undefined) updates.is_done = is_done;
 
       const { data, error } = await supabase
         .from('kanban_columns')
         .update(updates)
         .eq('id', id)
-        .select()
-        .single();
+        .select();
       if (error) throw error;
-      return data as KanbanColumn;
+      return (data ? data[0] : null) as KanbanColumn;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['columns', projectId] });

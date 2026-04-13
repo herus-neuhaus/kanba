@@ -40,8 +40,10 @@ export interface Task {
   labels: string[] | null;
   checklist: ChecklistItem[] | null;
   created_at: string | null;
+  completed_at?: string | null;
   assignees?: Profile[];
   project?: Project;
+  column?: KanbanColumn;
   comments?: Comment[];
 }
 
@@ -74,6 +76,7 @@ export interface KanbanColumn {
   title: string;
   order_index: number;
   color: string;
+  is_done: boolean;
   created_at?: string;
 }
 

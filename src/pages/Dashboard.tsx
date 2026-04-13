@@ -3,6 +3,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useAuth } from '@/hooks/useAuth';
+import type { Task } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -39,16 +40,22 @@ export default function Dashboard() {
 
   const now = new Date();
   
-  // Categorize Tasks
-  const overdueTasks = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isToday(parseISO(t.due_date)) && (t as any).status !== 'done');
-  const todayTasks = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date)) && (t as any).status !== 'done');
-  const doneTasks = tasks.filter(t => (t as any).status === 'done');
-  const inProgressTasks = tasks.filter(t => (t as any).status !== 'backlog' && (t as any).status !== 'done');
-  const approvalTasks = tasks.filter(t => (t as any).status === 'approval');
+  // Dynamic Categorization
+  const isDone = (t: Task) => !!t.completed_at || t.column?.is_done === true;
+  const isBacklog = (t: Task) => !isDone(t) && t.column?.order_index === 0;
+
+  const overdueTasks = tasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isToday(parseISO(t.due_date)) && !isDone(t));
+  const todayTasks = tasks.filter(t => t.due_date && isToday(parseISO(t.due_date)) && !isDone(t));
+  const doneTasks = tasks.filter(t => isDone(t));
+  const inProgressTasks = tasks.filter(t => !isBacklog(t) && !isDone(t));
+  
+  // Legacy support for 'approval' - checking column title if status is missing
+  const approvalTasks = tasks.filter(t => !isDone(t) && (t.column?.title?.toLowerCase().includes('aprovação') || (t as any).status === 'approval'));
+  
   const staleTasks = tasks.filter(t => {
-     if ((t as any).status === 'done') return false;
+     if (isDone(t)) return false;
      const lastAction = (t as any).last_notified_at ? new Date((t as any).last_notified_at) : (t.created_at ? new Date(t.created_at) : now);
-     return differenceInDays(now, lastAction) >= 2 && (t as any).status !== 'approval';
+     return differenceInDays(now, lastAction) >= 2 && !approvalTasks.some(at => at.id === t.id);
   });
 
   const overallProgress = tasks.length > 0 ? Math.round((doneTasks.length / tasks.length) * 100) : 0;
@@ -237,8 +244,8 @@ export default function Dashboard() {
               <div className="space-y-0.5">
                 {projects.slice(0, 8).map(p => {
                   const clientTasks = tasks.filter(t => t.project_id === p.id);
-                  const activeT = clientTasks.filter(t => (t as any).status !== 'done').length;
-                  const overdueT = clientTasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && (t as any).status !== 'done').length;
+                  const activeT = clientTasks.filter(t => !isDone(t)).length;
+                  const overdueT = clientTasks.filter(t => t.due_date && isPast(parseISO(t.due_date)) && !isDone(t)).length;
 
                   return (
                     <Link to={`/projetos/${p.id}/kanban`} key={p.id} className="group flex items-center justify-between p-3.5 rounded-xl hover:bg-primary/[0.03] transition-all">

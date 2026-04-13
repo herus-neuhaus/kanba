@@ -40,19 +40,35 @@ export default function ClientKanbanBoard() {
   const firstColId = columns[0]?.id;
   const lastColId = columns[columns.length - 1]?.id;
 
-  const inProgressTasks = tasks.filter(t => t.column_id !== firstColId && t.column_id !== lastColId).length;
-  const overdueTasks = tasks.filter(t => t.due_date && isPast(new Date(t.due_date)) && t.column_id !== lastColId).length;
+  const inProgressTasks = tasks.filter(t => {
+     const col = columns.find(c => c.id === t.column_id);
+     return t.column_id !== firstColId && !col?.is_done;
+  }).length;
+
+  const overdueTasks = tasks.filter(t => {
+    const col = columns.find(c => c.id === t.column_id);
+    return t.due_date && isPast(new Date(t.due_date)) && !col?.is_done;
+  }).length;
 
   const onDragEnd = (result: DropResult) => {
     if (!canEdit || !result.destination) return;
     const taskId = result.draggableId;
     const newColumnId = result.destination.droppableId;
     const task = tasks.find(t => t.id === taskId);
-    
-    updateTask.mutate({ id: taskId, column_id: newColumnId });
+    if (!task) return;
 
     const destCol = columns.find(c => c.id === newColumnId);
-    if (destCol?.title?.toLowerCase().includes('aprov') && task && task.column_id !== newColumnId) {
+    const updates: any = { id: taskId, column_id: newColumnId };
+
+    if (destCol?.is_done) {
+      updates.completed_at = new Date().toISOString();
+    } else {
+      updates.completed_at = null;
+    }
+    
+    updateTask.mutate(updates);
+
+    if (destCol?.title?.toLowerCase().includes('aprov') && task.column_id !== newColumnId) {
       const aIds = task.assignee_ids || [];
       for (const aId of aIds) {
         const assignee = team.find(m => m.id === aId);
@@ -124,7 +140,7 @@ export default function ClientKanbanBoard() {
               onTaskClick={(task) => setSelectedTaskId(task.id)}
               onAddTask={canEdit ? () => { setCreateColumnId(col.id); setCreateOpen(true); } : () => {}}
               onDeleteColumn={() => {}} // Clients cannot delete columns
-              onUpdateColumn={canEdit ? (id, title, color) => updateColumn.mutate({ id, title, color }) : () => {}}
+              onUpdateColumn={canEdit ? (id, title, color, is_done) => updateColumn.mutate({ id, title, color, is_done }) : () => {}}
             />
           ))}
         </div>

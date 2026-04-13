@@ -2,10 +2,14 @@ import { memo, useState, useRef, useEffect } from 'react';
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { TaskCard } from './TaskCard';
 import { Button } from '@/components/ui/button';
-import { Plus, MoreHorizontal, Trash } from 'lucide-react';
 import type { Task, KanbanColumn as IKanbanColumn } from '@/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/components/ui/use-toast';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { CheckCircle2, Plus, MoreHorizontal, Trash } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Props {
   column: IKanbanColumn;
@@ -13,7 +17,7 @@ interface Props {
   onTaskClick: (task: Task) => void;
   onAddTask: () => void;
   onDeleteColumn: (columnId: string) => void;
-  onUpdateColumn: (columnId: string, title: string, color?: string) => void;
+  onUpdateColumn: (columnId: string, title: string, color?: string, is_done?: boolean) => void;
 }
 
 const COLOR_OPTIONS = [
@@ -74,7 +78,29 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
   return (
     <div className="flex-shrink-0 w-72">
       <div className={`flex items-center justify-between mb-3 px-2 py-1.5 rounded-md ${column.color || 'bg-muted'}`}>
-        <div className="flex items-center gap-2 flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onUpdateColumn(column.id, column.title, undefined, !column.is_done);
+                  }}
+                  className={cn(
+                    "flex-shrink-0 transition-all duration-300 hover:scale-110 outline-none",
+                    column.is_done ? "text-green-500" : "text-muted-foreground/30 hover:text-muted-foreground/60"
+                  )}
+                >
+                  <CheckCircle2 className={cn("h-4 w-4", column.is_done && "fill-green-500/20")} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-[10px] font-black uppercase tracking-widest bg-popover/90 backdrop-blur-md border-primary/20 text-foreground px-3 py-1.5 shadow-xl">
+                {column.is_done ? 'Esta coluna finaliza tarefas' : 'Clique para definir como coluna de conclusão'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {isEditing ? (
             <input
               ref={inputRef}
@@ -82,18 +108,18 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
               onChange={(e) => setTitle(e.target.value)}
               onBlur={handleTitleSubmit}
               onKeyDown={handleKeyDown}
-              className="bg-background border px-1 py-0.5 rounded text-sm font-semibold w-full outline-none focus:ring-2 focus:ring-primary"
+              className="bg-background border-none px-1 py-0.5 rounded text-sm font-bold w-full outline-none focus:ring-2 focus:ring-primary/50 transition-all"
             />
           ) : (
             <h3 
-              className="font-semibold text-sm truncate cursor-text hover:opacity-80 py-0.5 px-1 -ml-1 rounded"
+              className="font-bold text-sm truncate cursor-text hover:opacity-80 py-0.5 px-1 -ml-1 rounded transition-colors"
               onClick={() => setIsEditing(true)}
               title="Clique para editar"
             >
               {column.title}
             </h3>
           )}
-          <span className="text-xs text-muted-foreground bg-background/50 px-2 py-0.5 rounded-full">{tasks.length}</span>
+          <span className="text-[10px] font-black text-muted-foreground bg-background/40 backdrop-blur-sm px-2 py-0.5 rounded-full border border-border/50">{tasks.length}</span>
         </div>
         
         <div className="flex items-center flex-shrink-0 ml-1">
@@ -120,6 +146,17 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
                 ))}
               </div>
               <DropdownMenuSeparator />
+              <div className="flex items-center justify-between px-2 py-2">
+                <Label htmlFor={`is-done-${column.id}`} className="text-[11px] font-medium cursor-pointer">
+                  Finaliza a tarefa
+                </Label>
+                <Switch 
+                  id={`is-done-${column.id}`} 
+                  checked={column.is_done} 
+                  onCheckedChange={(checked) => onUpdateColumn(column.id, column.title, undefined, checked)}
+                />
+              </div>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
                 <Trash className="h-4 w-4 mr-2" />
                 Excluir Coluna
@@ -144,7 +181,7 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
                     {...provided.dragHandleProps}
                     onClick={() => onTaskClick(task)}
                   >
-                    <TaskCard task={task} isDragging={snapshot.isDragging} />
+                    <TaskCard task={task} isDragging={snapshot.isDragging} isColumnDone={column.is_done} />
                   </div>
                 )}
               </Draggable>

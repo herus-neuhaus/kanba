@@ -12,7 +12,15 @@ export function useTasks(projectId?: string) {
     queryKey: ['tasks', agency?.id, projectId],
     queryFn: async () => {
       if (!agency) return [];
-      let q = supabase.from('tasks').select('*, project:projects(name)').eq('agency_id', agency.id);
+      let q = supabase
+        .from('tasks')
+        .select(`
+          *,
+          project:projects(name),
+          column:kanban_columns(*)
+        `)
+        .eq('agency_id', agency.id);
+      
       if (projectId) q = q.eq('project_id', projectId);
       const { data, error } = await q.order('created_at', { ascending: false });
       if (error) throw error;

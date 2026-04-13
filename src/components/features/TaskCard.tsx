@@ -11,6 +11,7 @@ import type { Task } from '@/types';
 interface Props {
   task: Task;
   isDragging?: boolean;
+  isColumnDone?: boolean;
 }
 
 const labelColors: Record<string, string> = {
@@ -26,8 +27,8 @@ const PRIORITY_INFO: Record<string, { border: string; text: string; label: strin
   baixa: { border: 'border-l-accent',      text: 'text-accent',      label: 'Baixa' },
 };
 
-export const TaskCard = memo(function TaskCard({ task, isDragging }: Props) {
-  const isOverdue = task.due_date && isPast(new Date(task.due_date)) && (task as any).status !== 'done';
+export const TaskCard = memo(function TaskCard({ task, isDragging, isColumnDone }: Props) {
+  const isOverdue = task.due_date && isPast(new Date(task.due_date)) && !isColumnDone;
 
   const p = PRIORITY_INFO[task.priority || 'baixa'] ?? PRIORITY_INFO.baixa;
 

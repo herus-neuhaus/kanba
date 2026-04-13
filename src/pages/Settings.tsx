@@ -97,11 +97,10 @@ export default function Settings() {
         .from('agencies')
         .update({ name: agencyName, demand_types: demandTypes })
         .eq('id', agency.id)
-        .select()
-        .single();
+        .select();
   
       if (error) throw error;
-      if (!data) throw new Error('Não foi possível atualizar (Permissão negada ou agência não encontrada).');
+      if (!data || data.length === 0) throw new Error('Não foi possível atualizar (Permissão negada ou agência não encontrada).');
       
       await refreshProfile();
       toast({ title: 'Agência atualizada!', description: 'As configurações da agência foram salvas.' });
@@ -131,11 +130,10 @@ export default function Settings() {
         .from('agencies')
         .update({ demand_types: newDemandTypes })
         .eq('id', agency.id)
-        .select()
-        .single();
+        .select();
         
       if (error) throw error;
-      if (!data) throw new Error('Falha ao adicionar categoria.');
+      if (!data || data.length === 0) throw new Error('Falha ao adicionar categoria.');
       
       // Apenas atualizar o estado local se a API retornou sucesso
       setDemandTypes(newDemandTypes);
@@ -159,11 +157,10 @@ export default function Settings() {
         .from('agencies')
         .update({ demand_types: newDemandTypes })
         .eq('id', agency.id)
-        .select()
-        .single();
+        .select();
         
       if (error) throw error;
-      if (!data) throw new Error('Falha ao remover categoria.');
+      if (!data || data.length === 0) throw new Error('Falha ao remover categoria.');
       
       // Apenas atualizar o estado local se a API retornou sucesso
       setDemandTypes(newDemandTypes);
