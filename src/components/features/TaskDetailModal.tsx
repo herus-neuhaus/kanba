@@ -8,6 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import { toast as sonnerToast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { useTasks } from '@/hooks/useTasks';
 import { useComments } from '@/hooks/useComments';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +33,7 @@ import { sendWhatsAppNotification } from '@/lib/evolution';
 import { generateTaskLink } from '@/lib/urls';
 import { renderTextWithMentions } from '@/lib/mentions';
 import { MentionInput } from './MentionInput';
+import { renderTextWithLinks } from '@/lib/linkify';
 import type { Task, Profile, ChecklistItem } from '@/types';
 
 interface Props {
@@ -37,12 +51,14 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
   const [commentText, setCommentText] = useState('');
   const [newCheckItem, setNewCheckItem] = useState('');
   const { toast } = useToast();
+  const qc = useQueryClient();
 
   const currentDemandTypes = agency?.demand_types || (DEMAND_TYPES as unknown as string[]);
 
   const [cardData, setCardData] = useState<Task>(task);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
   
   const isClient = profile?.role === 'client';
 
@@ -128,13 +144,42 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
   };
 
   const handleDelete = async () => {
-    try {
-      await deleteTask.mutateAsync(task.id);
-      onClose();
-      toast({ title: 'Demanda excluída' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
+    // 1. Prepare for optimistic update
+    const queryKey = ['tasks', agency?.id, task.project_id];
+    const previousTasks = qc.getQueryData<Task[]>(queryKey);
+
+    // 2. Close modal immediately
+    onClose();
+
+    // 3. Optimistic update: remove task from cache
+    if (previousTasks) {
+      qc.setQueryData<Task[]>(queryKey, old => old?.filter(t => t.id !== task.id));
     }
+
+    // 4. Set timeout for permanent deletion
+    const timeoutId = setTimeout(async () => {
+      try {
+        await deleteTask.mutateAsync(task.id);
+      } catch (err: any) {
+        // If permanent delete fails, restore the cache
+        qc.setQueryData(queryKey, previousTasks);
+        sonnerToast.error(`Erro ao excluir permanentemente: ${err.message}`);
+      }
+    }, 5000);
+
+    // 5. Show toast with Undo action
+    sonnerToast.info("Demanda excluída", {
+      description: "Você tem 5 segundos para desfazer esta ação.",
+      duration: 5000,
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          qc.setQueryData(queryKey, previousTasks);
+          sonnerToast.success("Ação desfeita com sucesso!");
+        },
+      },
+    });
   };
 
   return (
@@ -254,13 +299,28 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Descrição</label>
-            <BalanceTextarea
-              disabled={isClient}
-              placeholder="Adicione uma descrição mais detalhada para esta demanda..."
-              value={cardData.description || ''}
-              onChange={(e: any) => updateCardLocal({ description: e.target.value })}
-              rows={3}
-            />
+            {isEditingDescription && !isClient ? (
+              <BalanceTextarea
+                autoFocus
+                placeholder="Adicione uma descrição mais detalhada para esta demanda..."
+                value={cardData.description || ''}
+                onChange={(e: any) => updateCardLocal({ description: e.target.value })}
+                onBlur={() => setIsEditingDescription(false)}
+                rows={4}
+              />
+            ) : (
+              <div 
+                onDoubleClick={() => !isClient && setIsEditingDescription(true)}
+                className={`text-sm leading-relaxed p-2 min-h-[80px] rounded-md transition-colors whitespace-pre-wrap break-words ${!isClient ? 'hover:bg-muted/30 cursor-text' : 'bg-muted/10'}`}
+                title={!isClient ? "Clique duas vezes para editar" : ""}
+              >
+                {cardData.description ? (
+                  renderTextWithLinks(cardData.description)
+                ) : (
+                  <span className="text-muted-foreground italic">Nenhuma descrição fornecida...</span>
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />
@@ -286,7 +346,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
                       onClick={() => { if (!isClient) setEditingItemId(item.id); }}
                       className={`flex-1 text-sm ${!isClient && 'cursor-pointer'} ${item.done ? 'line-through text-muted-foreground' : ''}`}
                     >
-                      {item.text}
+                      {renderTextWithLinks(item.text)}
                     </span>
                   )}
 
@@ -351,7 +411,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
                             {part.value}
                           </span>
                         ) : (
-                          <span key={i}>{part.value}</span>
+                          <span key={i}>{renderTextWithLinks(part.value)}</span>
                         )
                       )}
                     </p>
@@ -392,9 +452,31 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
         <DialogFooter className="p-4 bg-muted/40 border-t flex flex-row items-center justify-between w-full sm:justify-between">
           {!isClient ? (
             <>
-              <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10" onClick={handleDelete}>
-                <Trash2 className="h-4 w-4 mr-2" /> Excluir Demanda
-              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" size="sm" className="text-destructive hover:bg-destructive/10">
+                    <Trash2 className="h-4 w-4 mr-2" /> Excluir Demanda
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Esta ação não pode ser desfeita após o período de 5 segundos. 
+                      A demanda "<strong>{task.title}</strong>" será removida permanentemente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Sim, excluir
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               <div className="flex justify-end gap-2 shrink-0">
                  <Button variant="outline" size="sm" onClick={onClose}>
                     Cancelar

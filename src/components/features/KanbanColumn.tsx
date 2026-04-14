@@ -10,6 +10,19 @@ import { Label } from '@/components/ui/label';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CheckCircle2, Plus, MoreHorizontal, Trash } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle, 
+  AlertDialogTrigger 
+} from '@/components/ui/alert-dialog';
+import { toast as sonnerToast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface Props {
   column: IKanbanColumn;
@@ -32,9 +45,11 @@ const COLOR_OPTIONS = [
 
 export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskClick, onAddTask, onDeleteColumn, onUpdateColumn }: Props) {
   const { toast } = useToast();
+  const qc = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [title, setTitle] = useState(column.title);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     setTitle(column.title);
@@ -72,7 +87,40 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
       });
       return;
     }
-    onDeleteColumn(column.id);
+
+    // 1. Prepare for optimistic update
+    const queryKey = ['columns', column.project_id];
+    const previousColumns = qc.getQueryData<IKanbanColumn[]>(queryKey);
+
+    // 2. Optimistic update: remove column from cache
+    if (previousColumns) {
+      qc.setQueryData<IKanbanColumn[]>(queryKey, old => old?.filter(c => c.id !== column.id));
+    }
+
+    // 3. Set timeout for permanent deletion
+    const timeoutId = setTimeout(async () => {
+      try {
+        await onDeleteColumn(column.id);
+      } catch (err: any) {
+        // If permanent delete fails, restore the cache
+        qc.setQueryData(queryKey, previousColumns);
+        sonnerToast.error(`Erro ao excluir coluna: ${err.message}`);
+      }
+    }, 5000);
+
+    // 4. Show toast with Undo action
+    sonnerToast.info("Coluna excluída", {
+      description: "Você tem 5 segundos para desfazer esta ação.",
+      duration: 5000,
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          qc.setQueryData(queryKey, previousColumns);
+          sonnerToast.success("Coluna restaurada!");
+        },
+      },
+    });
   };
 
   return (
@@ -157,10 +205,32 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
                 />
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleDelete} className="text-destructive focus:text-destructive">
-                <Trash className="h-4 w-4 mr-2" />
-                Excluir Coluna
-              </DropdownMenuItem>
+              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+                <AlertDialogTrigger asChild>
+                  <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:text-destructive">
+                    <Trash className="h-4 w-4 mr-2" />
+                    Excluir Coluna
+                  </DropdownMenuItem>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Excluir coluna "{column.title}"?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Isso removerá a coluna permanentemente após 5 segundos. 
+                      Certifique-se de que não há tarefas importantes aqui.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction 
+                      onClick={handleDelete}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Confirmar Exclusão
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

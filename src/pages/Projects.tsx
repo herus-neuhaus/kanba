@@ -9,6 +9,8 @@ import { Plus, FolderKanban, MoreVertical, Edit2, Trash2, LayoutDashboard, Alert
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { toast as sonnerToast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 const PLAN_LIMITS: Record<string, number> = {
   free: 2,
@@ -49,6 +51,7 @@ export default function Projects() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const { toast } = useToast();
+  const qc = useQueryClient();
   const navigate = useNavigate();
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -85,14 +88,46 @@ export default function Projects() {
 
   const handleDelete = async () => {
     if (!deleteId) return;
-    try {
-      await deleteProject.mutateAsync(deleteId);
-      toast({ title: 'Projeto deletado' });
-    } catch (err: any) {
-      toast({ title: 'Erro', description: err.message, variant: 'destructive' });
-    } finally {
-      setDeleteId(null);
+
+    const projectToDelete = projects.find(p => p.id === deleteId);
+    if (!projectToDelete) return;
+
+    // 1. Prepare for optimistic update
+    const queryKey = ['projects', agency?.id];
+    const previousProjects = qc.getQueryData<Project[]>(queryKey);
+
+    // 2. Optimistic update
+    if (previousProjects) {
+      qc.setQueryData<Project[]>(queryKey, old => old?.filter(p => p.id !== deleteId));
     }
+
+    // 3. Clear deleteId to close AlertDialog immediately
+    setDeleteId(null);
+
+    // 4. Set timeout for permanent deletion
+    const timeoutId = setTimeout(async () => {
+      try {
+        await deleteProject.mutateAsync(deleteId);
+      } catch (err: any) {
+        // Restore cache on error
+        qc.setQueryData(queryKey, previousProjects);
+        sonnerToast.error(`Erro ao excluir projeto: ${err.message}`);
+      }
+    }, 5000);
+
+    // 5. Show toast with Undo action
+    sonnerToast.info("Projeto excluído", {
+      description: `O projeto "${projectToDelete.name}" e suas tarefas serão removidos em 5 segundos.`,
+      duration: 5000,
+      action: {
+        label: "Desfazer",
+        onClick: () => {
+          clearTimeout(timeoutId);
+          qc.setQueryData(queryKey, previousProjects);
+          sonnerToast.success("Ação desfeita! O projeto foi restaurado.");
+        },
+      },
+    });
   };
 
   const openEditDialog = (project: Project) => {
