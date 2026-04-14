@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useProjects } from '@/hooks/useProjects';
@@ -12,6 +12,7 @@ import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo, Book
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { isPast } from 'date-fns';
 import { logAndNotify } from '@/lib/notifications';
+import { generateTaskLink } from '@/lib/urls';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectWiki } from '@/components/features/ProjectWiki';
 import { ProjectCalendar } from '@/components/features/ProjectCalendar';
@@ -24,7 +25,26 @@ export default function KanbanBoard() {
   const { data: team = [] } = useTeam();
   
   const currentClient = projects.find(p => p.id === projectId);
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const taskIdParam = searchParams.get('task');
+  
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (taskIdParam) {
+      setSelectedTaskId(taskIdParam);
+    }
+  }, [taskIdParam]);
+
+  const handleCloseModal = () => {
+    setSelectedTaskId(null);
+    if (searchParams.has('task')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('task');
+      setSearchParams(newParams, { replace: true });
+    }
+  };
   const [createOpen, setCreateOpen] = useState(false);
   const [createColumnId, setCreateColumnId] = useState<string | undefined>(undefined);
 
@@ -70,7 +90,8 @@ export default function KanbanBoard() {
       for (const aId of aIds) {
         const assignee = team.find(m => m.id === aId);
         if (assignee?.phone) {
-          const msg = `✅ *Demanda em ${destCol.title}*\n\nOlá ${assignee.full_name}!\nA demanda *${task.title}* do projeto *${currentClient?.name || 'Agência'}* foi movida para *${destCol.title}*.`;
+          const link = generateTaskLink(projectId!, taskId);
+          const msg = `✅ *Demanda em ${destCol.title}*\n\nOlá ${assignee.full_name}!\nA demanda *${task.title}* do projeto *${currentClient?.name || 'Agência'}* foi movida para *${destCol.title}*.\n\n👉 *Acesse direto a tarefa aqui:*\n🔗 ${link}`;
           logAndNotify(taskId, 'pending_approval', assignee.phone, msg);
         }
       }
@@ -189,7 +210,7 @@ export default function KanbanBoard() {
           task={selectedTask}
           team={team}
           open={!!selectedTaskId}
-          onClose={() => setSelectedTaskId(null)}
+          onClose={handleCloseModal}
           columns={columns}
         />
       )}

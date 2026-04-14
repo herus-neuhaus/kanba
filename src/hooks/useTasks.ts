@@ -42,6 +42,14 @@ export function useTasks(projectId?: string) {
   const updateTask = useMutation({
     mutationFn: async ({ id, checklist, ...updates }: { id: string; checklist?: any; [key: string]: any }) => {
       const payload: Record<string, any> = { ...updates };
+      
+      // Clean up common virtual fields that should not be sent back to Supabase
+      delete payload.column;
+      delete payload.project;
+      delete payload.assignees;
+      delete payload.comments;
+      delete payload.created_at;
+
       if (checklist !== undefined) payload.checklist = checklist as Json;
       const { error } = await supabase.from('tasks').update(payload).eq('id', id);
       if (error) throw error;

@@ -29,6 +29,7 @@ const Team              = lazy(() => import("@/pages/Team"));
 const Settings          = lazy(() => import("@/pages/Settings"));
 const ClientDashboard   = lazy(() => import("@/pages/ClientDashboard"));
 const ClientKanbanBoard = lazy(() => import("@/pages/ClientKanbanBoard"));
+const TaskRedirect      = lazy(() => import("@/pages/TaskRedirect"));
 
 // Layouts — only needed inside the app
 const DashboardLayout = lazy(() =>
@@ -211,6 +212,9 @@ function AppRoutes() {
       {/* ── Rotas de Cliente ── */}
       <Route path="/cliente/dashboard"                        element={<ClientRoute><Suspense fallback={<PageLoader />}><ClientDashboard /></Suspense></ClientRoute>} />
       <Route path="/cliente/projetos/:projectId/kanban"       element={<ClientRoute><Suspense fallback={<PageLoader />}><ClientKanbanBoard /></Suspense></ClientRoute>} />
+      
+      {/* ── Redirecionamento de Tarefa (Shortlink) ── */}
+      <Route path="/t/:taskId" element={<Suspense fallback={<LoadingSplash />}><TaskRedirect /></Suspense>} />
 
       <Route path="*" element={<Suspense fallback={<PageLoader />}><NotFound /></Suspense>} />
     </Routes>

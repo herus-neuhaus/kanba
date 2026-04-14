@@ -32,25 +32,14 @@ export function useInvites() {
     mutationFn: async (token: string) => {
       if (!user) throw new Error('Must be logged in');
       
-      // 1. Get invite details
-      const { data: invite, error: fetchError } = await supabase.from('invites').select('*').eq('token', token).single();
-      if (fetchError || !invite) throw new Error('Convite inválido ou expirado');
-      if (invite.used) throw new Error('Este convite já foi utilizado');
-
-      // 2. Update user profile with agency_id and role
-      const { error: profileError } = await supabase.from('profiles').update({ 
-        agency_id: invite.agency_id, 
-        role: invite.role,
-        status: 'active',
-        onboarding_completed: true
-      }).eq('id', user.id);
+      const { data, error } = await supabase.rpc('accept_agency_invitation', { p_token: token });
       
-      if (profileError) throw profileError;
+      if (error) throw error;
+      
+      const result = data as { success: boolean; message?: string; agency_id?: string };
+      if (result && !result.success) throw new Error(result.message);
 
-      // 3. Mark invite as used
-      await supabase.from('invites').update({ used: true }).eq('id', invite.id);
-
-      return invite;
+      return result;
     },
     onSuccess: async () => {
       await refreshProfile();

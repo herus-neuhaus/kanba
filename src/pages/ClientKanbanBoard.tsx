@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useProjects } from '@/hooks/useProjects';
@@ -29,8 +29,26 @@ export default function ClientKanbanBoard() {
   const currentPermission = permissions.find(p => p.project_id === projectId);
   
   const canEdit = false; // Cliente nunca pode editar quadro/drag-drop
-
+  
+  const [searchParams, setSearchParams] = useSearchParams();
+  const taskIdParam = searchParams.get('task');
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (taskIdParam) {
+      setSelectedTaskId(taskIdParam);
+    }
+  }, [taskIdParam]);
+
+  const handleCloseModal = () => {
+    setSelectedTaskId(null);
+    if (searchParams.has('task')) {
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('task');
+      setSearchParams(newParams, { replace: true });
+    }
+  };
+
   const [createOpen, setCreateOpen] = useState(false);
   const [createColumnId, setCreateColumnId] = useState<string | undefined>(undefined);
 
@@ -151,7 +169,7 @@ export default function ClientKanbanBoard() {
           task={selectedTask}
           team={team}
           open={!!selectedTaskId}
-          onClose={() => setSelectedTaskId(null)}
+          onClose={handleCloseModal}
           columns={columns}
           // Idealmente passar canEdit para a modal saber se desabilita os inputs, mas vamos supor que o modal faz leitura padrão
         />

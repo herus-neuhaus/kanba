@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { logAndNotifyMention } from '@/lib/notifications';
+import { generateTaskLink } from '@/lib/urls';
 import { extractMentions } from '@/lib/mentions';
 import type { Comment, Profile, Task } from '@/types';
 
@@ -60,13 +61,14 @@ export function useComments(taskId: string | null) {
         if (member.id === user.id) continue;
         if (!member.phone) continue;
 
+        const link = generateTaskLink(task.project_id!, task.id);
         const message =
           `💬 *Você foi mencionado!*\n\n` +
           `👤 *Por:* ${authorName}\n` +
           `📋 *Tarefa:* ${task.title}\n` +
           `🗂️ *Projeto:* ${projectName}\n\n` +
           `_"${text.replace(/_/g, ' ')}"_\n\n` +
-          `Acesse o Kanba para responder.`;
+          `👉 *Acesse direto a tarefa aqui:*\n🔗 ${link}`;
 
         // Non-blocking — don't await to keep UI snappy
         logAndNotifyMention(commentId, taskId, member.phone, message).catch(

@@ -33,16 +33,12 @@ export default function Join() {
         if (token) {
           localStorage.setItem('invite_token', token);
         }
-        const { data, error: fetchError } = await supabase
-          .from('invites')
-          .select('*, agency:agencies(name)')
-          .eq('token', token)
-          .single();
-
-        if (fetchError || !data) throw new Error('Convite inválido ou expirado');
-        if (data.used) throw new Error('Este convite já foi utilizado');
+        const { data, error: fetchError } = await supabase.rpc('get_invite_info', { p_token: token });
+        const result = data as { success: boolean; message?: string; agency_name?: string; role?: string; agency_id?: string };
+ 
+        if (fetchError || !result || !result.success) throw new Error(result?.message || 'Convite inválido ou expirado');
         
-        setInviteData(data);
+        setInviteData(result);
       } catch (err: any) {
         setError(err.message);
       } finally {
@@ -69,7 +65,7 @@ export default function Join() {
     try {
       await acceptInvite.mutateAsync(token);
       await refreshProfile();
-      toast({ title: 'Bem-vindo!', description: `Você agora faz parte da agência ${inviteData.agency?.name}` });
+      toast({ title: 'Bem-vindo!', description: `Você agora faz parte da agência ${inviteData.agency_name}` });
       setHasJoined(true);
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
@@ -124,7 +120,7 @@ export default function Join() {
             para a AGÊNCIA:
           </p>
           <div className="mt-4 py-3 px-6 bg-primary/10 rounded-2xl border border-primary/20 mx-auto w-fit">
-            <p className="font-black text-primary text-xl uppercase tracking-tighter">{inviteData.agency?.name}</p>
+            <p className="font-black text-primary text-xl uppercase tracking-tighter">{inviteData.agency_name}</p>
           </div>
         </CardHeader>
         

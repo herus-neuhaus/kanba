@@ -17,6 +17,7 @@ import { Send, Plus, Trash2, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sendWhatsAppNotification } from '@/lib/evolution';
+import { generateTaskLink } from '@/lib/urls';
 import { renderTextWithMentions } from '@/lib/mentions';
 import { MentionInput } from './MentionInput';
 import type { Task, Profile, ChecklistItem } from '@/types';
@@ -41,6 +42,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
   const [cardData, setCardData] = useState<Task>(task);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
   
   const isClient = profile?.role === 'client';
 
@@ -54,7 +56,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
   const handleSaveAndExit = async () => {
     try {
-      const { assignees, project, comments, created_at, ...payload } = cardData;
+      const { assignees, project, column, comments, created_at, ...payload } = cardData;
 
       if (!payload.assignee_ids || payload.assignee_ids.length === 0) {
         toast({ title: 'Aviso', description: 'Por favor, atribua pelo menos um responsável.', variant: 'destructive' });
@@ -69,10 +71,9 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
       for (const newAssigneeId of newlyAssigned) {
         const newAssignee = team.find(m => m.id === newAssigneeId);
-        if (newAssignee?.phone) {
-          const message = `📋 *Nova Demanda Atribuída*\n\nOlá ${newAssignee.full_name}!\nVocê foi atribuído como responsável pela demanda: *${task.title}*.\n\nConfira no Painel da Agência.`;
-          sendWhatsAppNotification(newAssignee.phone, message);
-        }
+          const link = generateTaskLink(task.project_id!, task.id);
+          const message = `📋 *Nova Demanda Atribuída*\n\nOlá ${newAssignee.full_name}!\nVocê foi atribuído como responsável pela demanda: *${task.title}*.\n\n👉 *Acesse direto a tarefa aqui:*\n🔗 ${link}`;
+          sendWhatsAppNotification(newAssignee.phone, message, task.agency_id);
       }
 
       toast({ title: 'Alterações salvas' });
@@ -140,7 +141,31 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0">
         <DialogHeader className="p-6 pb-0 flex flex-row items-center justify-between space-y-0">
-          <DialogTitle className="text-xl pr-6 font-bold">{task.title}</DialogTitle>
+          <div className="flex-1 pr-6">
+            {isEditingTitle && !isClient ? (
+              <Textarea
+                autoFocus
+                className="text-xl font-bold bg-muted/30 border-primary/20 p-2 focus-visible:ring-1 focus-visible:ring-primary/30 h-auto min-h-[40px] resize-none"
+                value={cardData.title}
+                onChange={e => updateCardLocal({ title: e.target.value })}
+                onBlur={() => setIsEditingTitle(false)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    setIsEditingTitle(false);
+                  }
+                }}
+              />
+            ) : (
+              <div 
+                onDoubleClick={() => !isClient && setIsEditingTitle(true)}
+                className={`text-xl font-bold p-0 border-none bg-transparent cursor-text min-h-[1.5em] leading-tight break-words ${!isClient ? 'hover:bg-muted/30 rounded px-1 -mx-1 transition-colors' : ''}`}
+                title={!isClient ? "Clique duas vezes para editar" : ""}
+              >
+                {cardData.title}
+              </div>
+            )}
+          </div>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto p-6 pt-4 space-y-6">

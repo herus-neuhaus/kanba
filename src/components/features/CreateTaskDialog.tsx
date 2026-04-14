@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { DEMAND_TYPES } from '@/types';
 import { logAndNotify } from '@/lib/notifications';
 import { format } from 'date-fns';
+import { generateTaskLink } from '@/lib/urls';
 import { X } from 'lucide-react';
 import type { Profile, KanbanColumn } from '@/types';
 
@@ -77,7 +78,8 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
           const project = projects.find(p => p.id === projectId);
           if (assignee?.phone) {
             const dateStr = dueDate ? format(new Date(dueDate), 'dd/MM/yyyy') : 'Sem data';
-            const msg = `📋 *Nova Demanda Recebida*\n\nOlá ${assignee.full_name}!\nVocê foi atribuído a uma demanda: *${title}*\nProjeto: *${project?.name || 'Agência'}*\nPrazo: *${dateStr}*\n\nConfira no painel!`;
+            const link = generateTaskLink(projectId!, newTask.id);
+            const msg = `📋 *Nova Demanda Recebida*\n\nOlá ${assignee.full_name}!\nVocê foi atribuído a uma demanda: *${title}*\nProjeto: *${project?.name || 'Agência'}*\nPrazo: *${dateStr}*\n\n👉 *Acesse direto a tarefa aqui:*\n🔗 ${link}`;
             logAndNotify(newTask.id, 'creation', assignee.phone, msg);
           }
         }

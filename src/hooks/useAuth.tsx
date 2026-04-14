@@ -82,38 +82,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!inviteToken) return;
 
     try {
-      console.log("Auth: Processing invite token", inviteToken);
+      console.log("Auth: Processing invite token via RPC", inviteToken);
       
-      // 1. Get invite details
-      const { data: invite, error: fetchError } = await supabase
-        .from('invites')
-        .select('*')
-        .eq('token', inviteToken)
-        .single();
-        
-      if (fetchError || !invite || invite.used) {
+      const { data, error } = await supabase.rpc('accept_agency_invitation', { p_token: inviteToken });
+      
+      if (error) {
+        console.error("Auth: RPC Error processing invite", error);
         localStorage.removeItem('invite_token');
         return;
       }
 
-      // 2. Link user to agency and mark onboarding as complete
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ 
-          agency_id: invite.agency_id, 
-          role: invite.role,
-          status: 'active',
-          onboarding_completed: true 
-        })
-        .eq('id', userId);
-        
-      if (updateError) throw updateError;
+      const result = data as { success: boolean; message?: string };
+      if (result && !result.success) {
+        console.warn("Auth: Invite rejection", result.message);
+        localStorage.removeItem('invite_token');
+        return;
+      }
 
-      // 3. Mark invite as used
-      await supabase.from('invites').update({ used: true }).eq('id', invite.id);
-      
       localStorage.removeItem('invite_token');
-      console.log("Auth: Invite processed successfully");
+      console.log("Auth: Invite processed successfully via RPC");
       
       // Refresh profile to reflect changes
       await fetchProfile(userId);

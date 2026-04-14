@@ -132,6 +132,7 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          is_done: boolean | null
           order_index: number
           project_id: string
           title: string
@@ -140,6 +141,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_done?: boolean | null
           order_index?: number
           project_id: string
           title: string
@@ -148,6 +150,7 @@ export type Database = {
           color?: string | null
           created_at?: string
           id?: string
+          is_done?: boolean | null
           order_index?: number
           project_id?: string
           title?: string
@@ -210,6 +213,7 @@ export type Database = {
           created_at: string | null
           full_name: string | null
           id: string
+          onboarding_completed: boolean | null
           phone: string | null
           role: string | null
           status: string | null
@@ -219,6 +223,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id: string
+          onboarding_completed?: boolean | null
           phone?: string | null
           role?: string | null
           status?: string | null
@@ -228,6 +233,7 @@ export type Database = {
           created_at?: string | null
           full_name?: string | null
           id?: string
+          onboarding_completed?: boolean | null
           phone?: string | null
           role?: string | null
           status?: string | null
@@ -351,9 +357,10 @@ export type Database = {
       tasks: {
         Row: {
           agency_id: string
-          assignee_id: string | null
+          assignee_ids: string[] | null
           checklist: Json | null
           column_id: string | null
+          completed_at: string | null
           created_at: string | null
           description: string | null
           due_date: string | null
@@ -366,9 +373,10 @@ export type Database = {
         }
         Insert: {
           agency_id: string
-          assignee_id?: string | null
+          assignee_ids?: string[] | null
           checklist?: Json | null
           column_id?: string | null
+          completed_at?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -381,9 +389,10 @@ export type Database = {
         }
         Update: {
           agency_id?: string
-          assignee_id?: string | null
+          assignee_ids?: string[] | null
           checklist?: Json | null
           column_id?: string | null
+          completed_at?: string | null
           created_at?: string | null
           description?: string | null
           due_date?: string | null
@@ -400,13 +409,6 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "tasks_assignee_id_fkey"
-            columns: ["assignee_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -430,7 +432,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_agency_invitation: { Args: { p_token: string }; Returns: Json }
       get_complete_schema: { Args: never; Returns: Json }
+      get_invite_info: { Args: { p_token: string }; Returns: Json }
       get_user_agency_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       is_agency_admin_of: { Args: { profile_id: string }; Returns: boolean }
