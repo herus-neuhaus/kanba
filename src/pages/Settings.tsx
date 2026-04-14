@@ -216,23 +216,9 @@ export default function Settings() {
       setWaInstanceLoading(false);
     }
   };
-  const handleUpgradePlan = async (selectedPlan: string) => {
+  const handleUpgradePlan = (link: string) => {
     if (!agency) return;
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('agencies')
-        .update({ plan: selectedPlan })
-        .eq('id', agency.id);
-
-      if (error) throw error;
-      await refreshProfile();
-      toast({ title: 'Oba, Plano atualizado! 🎉', description: `Sua agência agora faz parte do plano ${selectedPlan.toUpperCase()}.` });
-    } catch (err: any) {
-      toast({ title: 'Erro ao assinar plano', description: err.message, variant: 'destructive' });
-    } finally {
-      setLoading(false);
-    }
+    window.location.href = `${link}?external_id=${agency.id}`;
   };
 
   return (
@@ -412,18 +398,23 @@ export default function Settings() {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Relatório de Assinatura</label>
+                      <label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Status da Assinatura</label>
                       <div className="flex items-center justify-between p-5 rounded-2xl border-2 border-dashed border-border bg-muted/10">
                         <div className="flex items-center gap-4">
                             <div className="p-3 rounded-2xl bg-background border shadow-sm">
                               <LayoutDashboard className="h-6 w-6 text-primary" />
                             </div>
                             <div>
-                              <p className="text-lg font-black tracking-tight capitalize">{agency?.plan || 'Agency Plus'}</p>
-                              <p className="text-xs text-muted-foreground font-medium">Todos os recursos premium ativos</p>
+                              <p className="text-lg font-black tracking-tight capitalize">{agency?.plan_type || 'Trial'}</p>
+                              <p className="text-xs text-muted-foreground font-medium">Status: {agency?.subscription_status || 'Trialing'}</p>
                             </div>
                         </div>
-                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[10px] uppercase">Conta VIP</Badge>
+                        <Badge className={cn(
+                          "border-none font-black text-[10px] uppercase",
+                          agency?.subscription_status === 'active' ? "bg-emerald-500/10 text-emerald-500" : "bg-amber-500/10 text-amber-500"
+                        )}>
+                          {agency?.subscription_status === 'active' ? 'Assinatura Ativa' : 'Aguardando Pagamento'}
+                        </Badge>
                       </div>
                     </div>
 
@@ -652,76 +643,76 @@ export default function Settings() {
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                 {/* Free */}
-                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", (!agency?.plan || agency?.plan === 'free') ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                 {/* Starter */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", (agency?.plan_type === 'starter') ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
                     <div className="flex justify-between items-start">
                        <div>
-                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-muted-foreground">Free</h3>
-                         <p className="font-black text-3xl mt-2">R$ 0<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-muted-foreground">Starter</h3>
+                         <p className="font-black text-3xl mt-2">R$ 97<span className="text-base text-muted-foreground font-medium">/mês</span></p>
                        </div>
-                       {(!agency?.plan || agency?.plan === 'free') && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                       {(agency?.plan_type === 'starter') && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
                     </div>
                     <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> 2 Projetos Máximos</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Equipe Limitada</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Suporte Básico</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Até 5 Projetos</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Kanban ilimitado</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Suporte via Chat</li>
                     </ul>
                     <Button 
-                       variant={(!agency?.plan || agency?.plan === 'free') ? 'outline' : 'default'}
+                       variant={(agency?.plan_type === 'starter') ? 'outline' : 'default'}
                        className="w-full font-bold uppercase tracking-widest mt-auto shadow"
-                       disabled={loading || !agency?.plan || agency?.plan === 'free'}
-                       onClick={() => handleUpgradePlan('free')}
+                       disabled={(agency?.plan_type === 'starter' && agency?.subscription_status === 'active')}
+                       onClick={() => handleUpgradePlan('https://pay.cakto.com.br/34bt8zp')}
                     >
-                       {(!agency?.plan || agency?.plan === 'free') ? 'Ativo' : 'Escolher Free'}
+                       {(agency?.plan_type === 'starter' && agency?.subscription_status === 'active') ? 'Ativo' : 'Escolher Starter'}
                     </Button>
                  </div>
 
-                 {/* Pro */}
-                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50 relative overflow-hidden", agency?.plan === 'pro' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
-                    {agency?.plan !== 'pro' && <div className="absolute top-0 right-0 bg-primary px-3 py-1 rounded-bl-xl font-bold text-[9px] uppercase text-primary-foreground tracking-widest">Recomendado</div>}
+                 {/* Growth */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50 relative overflow-hidden", agency?.plan_type === 'pro' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                    {agency?.plan_type !== 'pro' && <div className="absolute top-0 right-0 bg-primary px-3 py-1 rounded-bl-xl font-bold text-[9px] uppercase text-primary-foreground tracking-widest">Recomendado</div>}
                     <div className="flex justify-between items-start">
                        <div>
                          <h3 className="font-extrabold text-xl uppercase tracking-widest text-primary">Pro</h3>
-                         <p className="font-black text-3xl mt-2">R$ 0<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                         <p className="font-black text-3xl mt-2">R$ 247<span className="text-base text-muted-foreground font-medium">/mês</span></p>
                        </div>
-                       {agency?.plan === 'pro' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                       {agency?.plan_type === 'pro' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
                     </div>
                     <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
-                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Até 10 Projetos</li>
+                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Projetos ilimitados</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Dashboard de Relatórios</li>
                       <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Automação WhatsApp</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Equipe Desbloqueada</li>
                     </ul>
                     <Button 
-                       variant={agency?.plan === 'pro' ? 'outline' : 'default'}
+                       variant={agency?.plan_type === 'pro' ? 'outline' : 'default'}
                        className="w-full font-bold uppercase tracking-widest mt-auto shadow"
-                       disabled={loading || agency?.plan === 'pro'}
-                       onClick={() => handleUpgradePlan('pro')}
+                       disabled={agency?.plan_type === 'pro' && agency?.subscription_status === 'active'}
+                       onClick={() => handleUpgradePlan('https://pay.cakto.com.br/bdzd6t9')}
                     >
-                       {agency?.plan === 'pro' ? 'Ativo' : 'Ativar Em 1 Clique'}
+                       {agency?.plan_type === 'pro' && agency?.subscription_status === 'active' ? 'Ativo' : 'Ativar Agora'}
                     </Button>
                  </div>
 
-                 {/* Enterprise */}
-                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", agency?.plan === 'enterprise' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                 {/* Elite */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", agency?.plan_type === 'elite' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
                     <div className="flex justify-between items-start">
                        <div>
-                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-foreground">Enterprise</h3>
-                         <p className="font-black text-3xl mt-2">R$ 0<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-foreground">Elite</h3>
+                         <p className="font-black text-3xl mt-2">R$ 497<span className="text-base text-muted-foreground font-medium">/mês</span></p>
                        </div>
-                       {agency?.plan === 'enterprise' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                       {agency?.plan_type === 'elite' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
                     </div>
                     <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
-                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Projetos Ilimitados</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Instâncias WhatsApp Extras</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Prioridade de Suporte</li>
+                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Gestão de Equipe</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Wiki do Projeto</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Suporte Prioritário</li>
                     </ul>
                     <Button 
-                       variant={agency?.plan === 'enterprise' ? 'outline' : 'default'}
+                       variant={agency?.plan_type === 'elite' ? 'outline' : 'default'}
                        className="w-full font-bold uppercase tracking-widest mt-auto shadow"
-                       disabled={loading || agency?.plan === 'enterprise'}
-                       onClick={() => handleUpgradePlan('enterprise')}
+                       disabled={agency?.plan_type === 'elite' && agency?.subscription_status === 'active'}
+                       onClick={() => handleUpgradePlan('https://pay.cakto.com.br/3et7uft')}
                     >
-                       {agency?.plan === 'enterprise' ? 'Ativo' : 'Assinar Enterprise'}
+                       {agency?.plan_type === 'elite' && agency?.subscription_status === 'active' ? 'Ativo' : 'Assinar Elite'}
                     </Button>
                  </div>
               </div>

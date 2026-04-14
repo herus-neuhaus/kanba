@@ -1,4 +1,4 @@
-import { LayoutDashboard, FolderKanban, Settings, LogOut, Users, Zap, ShieldCheck, HelpCircle } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Settings, LogOut, Users, Zap, ShieldCheck, HelpCircle, BarChart3 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -16,6 +16,8 @@ const menuItems = [
   { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard },
   { title: 'Projetos',  url: '/projetos',  icon: FolderKanban },
   { title: 'Equipe',    url: '/team',      icon: Users },
+  { title: 'Relatórios', url: '/reports',   icon: BarChart3 },
+  { title: 'CRM',       url: '/crm',       icon: Zap, badge: 'Novo' },
   { title: 'Configurações', url: '/settings', icon: Settings },
 ];
 
@@ -58,8 +60,15 @@ export function AppSidebar() {
         <SidebarGroup className="px-3">
           <SidebarGroupContent>
             <SidebarMenu className="gap-1">
-              {menuItems.map(item => (
-                <SidebarMenuItem key={item.title}>
+              {menuItems
+                .filter(item => {
+                  if (item.title === 'Relatórios') {
+                    return profile?.role === 'owner' || profile?.role === 'manager';
+                  }
+                  return true;
+                })
+                .map(item => (
+                  <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild className="h-11">
                     <NavLink 
                       to={item.url} 
@@ -74,6 +83,11 @@ export function AppSidebar() {
                         <item.icon className="h-4.5 w-4.5" />
                       </div>
                       {!collapsed && <span className="text-sm tracking-tight">{item.title}</span>}
+                      {!collapsed && item.badge && (
+                        <Badge className="ml-auto bg-primary text-primary-foreground border-none h-4 px-1.5 text-[8px] font-black uppercase tracking-tighter shadow-lg shadow-primary/20">
+                          {item.badge}
+                        </Badge>
+                      )}
                       {!collapsed && item.title === 'Atrasadas' && (
                         <Badge className="ml-auto bg-destructive/10 text-destructive border-none h-5 text-[10px] font-black">3</Badge>
                       )}

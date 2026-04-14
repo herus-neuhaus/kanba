@@ -30,6 +30,9 @@ const Settings          = lazy(() => import("@/pages/Settings"));
 const ClientDashboard   = lazy(() => import("@/pages/ClientDashboard"));
 const ClientKanbanBoard = lazy(() => import("@/pages/ClientKanbanBoard"));
 const TaskRedirect      = lazy(() => import("@/pages/TaskRedirect"));
+const CRM               = lazy(() => import("@/pages/CRM"));
+const Reports           = lazy(() => import("@/pages/Reports"));
+const SubscriptionPending = lazy(() => import("@/pages/SubscriptionPending"));
 
 // Layouts — only needed inside the app
 const DashboardLayout = lazy(() =>
@@ -96,6 +99,16 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     );
+  }
+
+  // ── Subscription Check ──
+  const isInvalid = 
+    agency && 
+    (agency.subscription_status === 'past_due' || agency.subscription_status === 'canceled' || 
+    (agency.next_billing_date && new Date(agency.next_billing_date) < new Date()));
+
+  if (isInvalid) {
+    return <Navigate to="/assinatura-pendente" replace />;
   }
 
   // If user linked via invite or finished onboarding, skip it
@@ -208,6 +221,9 @@ function AppRoutes() {
       <Route path="/projetos/:projectId/kanban" element={<ProtectedRoute><Suspense fallback={<PageLoader />}><KanbanBoard /></Suspense></ProtectedRoute>} />
       <Route path="/team"       element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Team /></Suspense></ProtectedRoute>} />
       <Route path="/settings"   element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Settings /></Suspense></ProtectedRoute>} />
+      <Route path="/crm"        element={<ProtectedRoute><Suspense fallback={<PageLoader />}><CRM /></Suspense></ProtectedRoute>} />
+      <Route path="/reports"    element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Reports /></Suspense></ProtectedRoute>} />
+      <Route path="/assinatura-pendente" element={<Suspense fallback={<PageLoader />}><SubscriptionPending /></Suspense>} />
 
       {/* ── Rotas de Cliente ── */}
       <Route path="/cliente/dashboard"                        element={<ClientRoute><Suspense fallback={<PageLoader />}><ClientDashboard /></Suspense></ClientRoute>} />

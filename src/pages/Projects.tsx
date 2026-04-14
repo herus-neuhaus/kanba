@@ -13,9 +13,10 @@ import { toast as sonnerToast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
 const PLAN_LIMITS: Record<string, number> = {
-  free: 2,
+  trial: 2,
+  starter: 2,
   pro: 10,
-  enterprise: 9999
+  elite: 9999
 };
 import {
   DropdownMenu,
@@ -45,7 +46,8 @@ export default function Projects() {
   const { agency } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   
-  const limit = PLAN_LIMITS[agency?.plan?.toLowerCase() || 'free'] || 2;
+  const currentPlanType = agency?.plan_type?.toLowerCase() || 'trial';
+  const limit = PLAN_LIMITS[currentPlanType] || 2;
   const isOverLimit = projects.length >= limit;
   
   const [name, setName] = useState('');
@@ -276,7 +278,7 @@ export default function Projects() {
                <AlertCircle className="h-8 w-8 text-primary" />
             </div>
             <p className="text-muted-foreground font-medium px-4">
-              Sua agência atingiu o limite de <strong className="text-foreground">{limit} projetos</strong> do plano atual (<span className="uppercase text-primary font-bold">{agency?.plan || 'Free'}</span>).
+              Sua agência atingiu o limite de <strong className="text-foreground">{limit} projetos</strong> do plano atual (<span className="uppercase text-primary font-bold">{agency?.plan_type || 'Trial'}</span>).
             </p>
             <div className="bg-muted/50 p-4 rounded-xl text-sm font-bold text-foreground mx-4">
               Dê o próximo passo! Faça um upgrade para continuar criando novos projetos e escalando suas operações sem limites.
