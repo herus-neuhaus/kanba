@@ -1,97 +1,231 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const caktoClientId = Deno.env.get("CAKTO_CLIENT_ID");
-const caktoClientSecret = Deno.env.get("CAKTO_CLIENT_SECRET");
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+// ─── CORS Headers ─────────────────────────────────────────────────────────────
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
 
+/** Sempre retorna HTTP 200 — impede retry storms da Cakto */
+function jsonOk(body: Record<string, unknown>): Response {
+  return new Response(JSON.stringify(body), {
+    status: 200,
+    headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
+  });
+}
+
+// ─── Timing-Safe Compare (Anti timing-attack) ────────────────────────────────
+function timingSafeEqual(a: string, b: string): boolean {
+  const encoder = new TextEncoder();
+  const aBuf = encoder.encode(a);
+  const bBuf = encoder.encode(b);
+  if (aBuf.length !== bBuf.length) {
+    let _sink = 0;
+    for (let i = 0; i < aBuf.length; i++) _sink |= aBuf[i] ^ (bBuf[i % bBuf.length] ?? 0);
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < aBuf.length; i++) diff |= aBuf[i] ^ bBuf[i];
+  return diff === 0;
+}
+
+// ─── Plan Resolver ────────────────────────────────────────────────────────────
+function resolvePlan(productName: string, productId: string): string {
+  const name = String(productName).toLowerCase();
+  const pid = String(productId).toLowerCase();
+
+  if (name.includes("elite")) return "elite";
+  if (name.includes("growth") || name.includes("pro")) return "pro";
+  if (name.includes("starter")) return "starter";
+
+  if (pid.includes("3et7uft")) return "elite";
+  if (pid.includes("bdzd6t9")) return "pro";
+  if (pid.includes("34bt8zp")) return "starter";
+
+  return "starter";
+}
+
+// ─── UUID Validator ───────────────────────────────────────────────────────────
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// ─── Main Handler ─────────────────────────────────────────────────────────────
 serve(async (req: Request) => {
-  // CORS Headers
-  const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  };
-
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: CORS_HEADERS });
   }
-
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return jsonOk({ status: "ignored", reason: "method_not_allowed" });
   }
 
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+  console.log("cakto-webhook v17 [CHECKOUT URL PARSER] — Nova requisição");
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+
+  // ─── 1. SUPABASE COM SERVICE ROLE KEY (Bypass RLS) ────────────────────────
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    console.error("ERRO FATAL: SUPABASE_URL ou SUPABASE_SERVICE_ROLE_KEY ausentes.");
+    return jsonOk({ status: "ignored", reason: "server_misconfiguration" });
+  }
+
+  // Service Role Key = acesso total, bypass de RLS
+  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+  // ─── 2. PARSE JSON ────────────────────────────────────────────────────────
+  let payload: Record<string, any>;
   try {
-    const payload = await req.json();
-    console.log("Cakto Webhook received:", payload);
+    payload = await req.json();
+  } catch {
+    console.error("Payload não é JSON válido.");
+    return jsonOk({ status: "ignored", reason: "invalid_json" });
+  }
 
-    // Extraction logic based on Cakto payload structure
-    const data = payload.data || payload;
-    const productName = data.product_name || data.product?.name;
-    const productId = data.product_id || data.product?.id;
-    const externalId = data.external_id || data.refId;
-    const transactionId = data.id;
+  console.log("Payload recebido:", JSON.stringify(payload).substring(0, 800));
 
-    if (!externalId) {
-      console.error("Missing external_id (agency_id) in payload");
-      return new Response(JSON.stringify({ error: "Missing external_id" }), { 
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+  // ─── 3. VALIDAÇÃO DO SECRET VIA BODY ──────────────────────────────────────
+  const expectedSecret = (Deno.env.get("CAKTO_WEBHOOK_SECRET") ?? "").trim();
+  const receivedSecret = String(payload.secret ?? "").trim();
+
+  if (!expectedSecret) {
+    console.warn("ALERTA: CAKTO_WEBHOOK_SECRET não configurado. Pulando validação.");
+  } else if (!receivedSecret) {
+    console.error("Secret ausente no body do payload.");
+    return jsonOk({ status: "ignored", reason: "missing_secret" });
+  } else if (!timingSafeEqual(expectedSecret, receivedSecret)) {
+    console.error("Secret do payload NÃO confere.");
+    return jsonOk({ status: "ignored", reason: "invalid_secret" });
+  } else {
+    console.log("✅ Secret validado com sucesso.");
+  }
+
+  // ─── 4. EXTRAÇÃO SEGURA DO AGENCY ID (via checkoutUrl) ──────────────────
+  // A Cakto NÃO envia parâmetros separados em objetos (metadata/tracking).
+  // Em vez disso, envia a URL bruta com os parâmetros dentro de payload.data.checkoutUrl.
+  let agencyId = null;
+
+  if (payload.data?.checkoutUrl) {
+    try {
+      const checkoutUrl = new URL(payload.data.checkoutUrl);
+      // Busca tanto por 'external_id' quanto por 'src' para garantir
+      agencyId = checkoutUrl.searchParams.get('external_id') || checkoutUrl.searchParams.get('src');
+    } catch (error) {
+      console.warn("Erro ao fazer parse da checkoutUrl:", error);
     }
+  }
 
-    // Mapping plan types based on links provided by user
-    // Starter: https://pay.cakto.com.br/34bt8zp
-    // Growth (Pro): https://pay.cakto.com.br/bdzd6t9
-    // Elite: https://pay.cakto.com.br/3et7uft
-    
-    let planType = 'starter';
-    const nameLower = (productName || "").toLowerCase();
-    const idStr = String(productId || "");
+  const eventType = String(payload.event ?? payload.data?.event ?? "");
+  const status = String(payload.data?.status ?? payload.status ?? "");
+  const transactionId = String(payload.data?.id ?? payload.id ?? "");
+  const productName = String(payload.data?.product_name ?? payload.data?.product?.name ?? "");
+  const productId = String(payload.data?.product_id ?? payload.data?.product?.id ?? "");
 
-    // User explicitly asked for Growth to be mapped as 'pro'
-    if (nameLower.includes('elite') || idStr.includes('3et7uft')) {
-      planType = 'elite';
-    } else if (nameLower.includes('growth') || nameLower.includes('pro') || idStr.includes('bdzd6t9')) {
-      planType = 'pro';
-    } else if (nameLower.includes('starter') || idStr.includes('34bt8zp')) {
-      planType = 'starter';
-    }
+  console.log("─── Campos extraídos ───");
+  console.log(`  agencyId (from checkoutUrl): "${agencyId}"`);
+  console.log(`  event: "${eventType}", status: "${status}"`);
+  console.log(`  transactionId (data.id): "${transactionId}"`);
+  console.log(`  product: "${productName}" (${productId})`);
 
-    console.log(`Updating agency ${externalId} to ${planType} plan. (Cakto ID: ${caktoClientId ? 'Configured' : 'Warning: Not configured'})`);
+  // ─── 5. VALIDAÇÃO DO AGENCY ID ──────────────────────────────────────────
+  if (!agencyId) {
+    console.warn("Nenhum agencyId encontrado no payload. Webhook possivelmente de teste.");
+    return jsonOk({ status: "ignored", reason: "Sem ID de agência" });
+  }
 
+  if (!UUID_REGEX.test(agencyId)) {
+    console.warn(`agencyId "${agencyId}" não é UUID válido. Ignorando.`);
+    return jsonOk({ status: "ignored", reason: "ID não é UUID válido", received_id: agencyId });
+  }
+
+  console.log(`✅ agencyId UUID válido: ${agencyId}`);
+
+  // ─── 6. VERIFICAR AGÊNCIA NO BANCO ────────────────────────────────────────
+  const { data: agencyData, error: lookupError } = await supabase
+    .from("agencies")
+    .select("id, plan_type, subscription_status")
+    .eq("id", agencyId)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error("Erro ao buscar agência:", JSON.stringify(lookupError));
+    return jsonOk({ status: "ignored", reason: "db_lookup_error" });
+  }
+
+  if (!agencyData) {
+    console.warn(`Agência "${agencyId}" NÃO encontrada no banco. Pode ser webhook de teste.`);
+    return jsonOk({ status: "ignored", reason: "Agência não encontrada no banco", agency_id: agencyId });
+  }
+
+  console.log(`Agência encontrada: plan=${agencyData.plan_type}, status=${agencyData.subscription_status}`);
+
+  // ─── 7. CANCELAMENTOS ────────────────────────────────────────────────────
+  const CANCEL_EVENTS = ["subscription_canceled", "chargeback", "refund"];
+  if (CANCEL_EVENTS.includes(eventType)) {
+    console.log(`Processando cancelamento para ${agencyId}...`);
     const { error } = await supabase
-      .from('agencies')
-      .update({
-        plan_type: planType,
-        subscription_status: 'active',
-        last_payment_at: new Date().toISOString(),
-        next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        cakto_id: String(transactionId || '')
-      })
-      .eq('id', externalId);
+      .from("agencies")
+      .update({ subscription_status: "canceled" })
+      .eq("id", agencyId);
 
     if (error) {
-      console.error("Error updating agency in DB:", error);
-      return new Response(JSON.stringify({ error: "Database update failed" }), { 
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" }
-      });
+      console.error("Erro ao cancelar:", JSON.stringify(error));
+      return jsonOk({ status: "ignored", reason: "db_cancel_error" });
     }
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: `Agency ${externalId} updated to ${planType}` 
-    }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
-  } catch (err) {
-    console.error("Webhook processing error:", err);
-    return new Response(JSON.stringify({ error: "Internal Server Error" }), { 
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
+    console.log("✅ Cancelamento processado.");
+    return jsonOk({ status: "processed", event: eventType, agency: agencyId });
   }
+
+  // ─── 8. PAGAMENTOS APROVADOS ──────────────────────────────────────────────
+  const isPaymentApproved =
+    eventType === "payment.approved" ||
+    eventType === "payment_approved" ||
+    status === "paid" ||
+    status === "approved";
+
+  if (!isPaymentApproved) {
+    console.log(`Evento "${eventType}" não requer ação.`);
+    return jsonOk({ status: "ignored", reason: "event_not_actionable", event: eventType });
+  }
+
+  // ─── 9. ATUALIZAR BANCO ──────────────────────────────────────────────────
+  const planType = resolvePlan(productName, productId);
+  const now = new Date();
+  const nextBillingDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  console.log(`Plano resolvido: ${planType.toUpperCase()}`);
+  console.log(`Atualizando agência ${agencyId}...`);
+
+  const { data: updateData, error: dbError } = await supabase
+    .from("agencies")
+    .update({
+      plan_type: planType,
+      subscription_status: "active",
+      last_payment_at: now.toISOString(),
+      next_billing_date: nextBillingDate,
+      cakto_id: transactionId || null,
+    })
+    .eq("id", agencyId)
+    .select();
+
+  if (dbError) {
+    console.error("❌ Erro no UPDATE:", JSON.stringify(dbError));
+    return jsonOk({ status: "ignored", reason: "db_update_error" });
+  }
+
+  if (!updateData || updateData.length === 0) {
+    console.warn(`UPDATE executou mas 0 linhas afetadas para "${agencyId}".`);
+    return jsonOk({ status: "ignored", reason: "no_rows_updated" });
+  }
+
+  console.log("✅ Banco atualizado!", JSON.stringify(updateData));
+
+  return jsonOk({
+    status: "processed",
+    plan: planType,
+    agency: agencyId,
+    subscription_status: "active",
+  });
 });
