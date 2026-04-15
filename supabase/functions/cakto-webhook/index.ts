@@ -36,15 +36,24 @@ function resolvePlan(productName: string, productId: string): string {
   const name = String(productName).toLowerCase();
   const pid = String(productId).toLowerCase();
 
-  if (name.includes("elite")) return "elite";
-  if (name.includes("growth") || name.includes("pro")) return "pro";
-  if (name.includes("starter")) return "starter";
+  // New Value-Based Pricing Slugs
+  if (name.includes("enterprise")) return "enterprise";
+  if (name.includes("profissional") || name.includes("professional") || name.includes("recomendado")) return "profissional";
+  if (name.includes("standard") || name.includes("padrão") || name.includes("padrao")) return "standard";
+  if (name.includes("basic") || name.includes("básico") || name.includes("basico")) return "basic";
 
-  if (pid.includes("3et7uft")) return "elite";
-  if (pid.includes("bdzd6t9")) return "pro";
-  if (pid.includes("34bt8zp")) return "starter";
+  // Legacy mappings (fallback to equivalent new plans)
+  if (name.includes("elite")) return "enterprise";
+  if (name.includes("pro") || name.includes("growth")) return "profissional";
+  if (name.includes("starter")) return "standard";
 
-  return "starter";
+  // Check specific Cakto Product IDs if available
+  if (pid.includes("3et7uft")) return "enterprise";
+  if (pid.includes("bdzd6t9")) return "profissional";
+  if (pid.includes("ieah9nj_849299") || pid.includes("ieah9nj")) return "standard";
+  if (pid.includes("34bt8zp")) return "basic";
+
+  return "basic";
 }
 
 // ─── UUID Validator ───────────────────────────────────────────────────────────

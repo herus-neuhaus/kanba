@@ -2,7 +2,7 @@ export interface Agency {
   id: string;
   name: string;
   owner_user_id: string | null;
-  plan_type: 'starter' | 'pro' | 'elite' | 'trial' | null;
+  plan_type: 'basic' | 'standard' | 'profissional' | 'enterprise' | 'trial' | null;
   subscription_status: 'active' | 'past_due' | 'canceled' | 'trialing' | null;
   last_payment_at: string | null;
   next_billing_date: string | null;

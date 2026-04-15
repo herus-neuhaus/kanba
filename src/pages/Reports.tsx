@@ -14,8 +14,12 @@ import {
   CalendarCheck,
   Calendar as CalendarIcon,
   ChevronDown,
-  Sparkles
+  Sparkles,
+  Lock,
+  Rocket,
+  ArrowRight
 } from 'lucide-react';
+import { PLANS, type PlanType } from '@/config/plans';
 import { useAgencyStats } from '@/hooks/useAgencyStats';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -114,7 +118,7 @@ const KPICard = ({ title, value, icon: Icon, description, variant = 'default', e
 // --- Page Component ---
 
 export default function Reports() {
-  const { profile } = useAuth();
+  const { agency, profile } = useAuth();
   
   // Date state default: last 30 days
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | undefined>({
@@ -124,7 +128,27 @@ export default function Reports() {
 
   const { data: stats, isLoading, isError } = useAgencyStats(dateRange);
 
+  const currentPlanType = (agency?.plan_type?.toLowerCase() || 'trial') as PlanType;
+  const planConfig = PLANS[currentPlanType] || PLANS.trial;
+
   const canAccess = profile?.role === 'owner' || profile?.role === 'manager';
+
+  if (!planConfig.has_reports) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6 animate-fade-in px-4">
+        <div className="p-6 rounded-full bg-primary/10 text-primary border-2 border-primary/20 shadow-2xl">
+          <Lock className="h-16 w-16" />
+        </div>
+        <div className="space-y-2 max-w-md">
+            <h1 className="text-3xl font-black tracking-tight text-white uppercase italic">Análises <span className="text-primary not-italic">Restritas</span></h1>
+            <p className="text-muted-foreground font-medium uppercase text-xs tracking-widest">O módulo de Relatórios e BI está disponível a partir do plano <span className="text-primary font-bold">PROFISSIONAL</span>.</p>
+        </div>
+        <Button asChild className="rounded-full px-8 font-black uppercase tracking-widest text-[10px] h-11 shadow-lg shadow-primary/20">
+            <Link to="/settings">Fazer Upgrade Agora 🚀</Link>
+        </Button>
+      </div>
+    );
+  }
 
   if (!canAccess && !isLoading) {
     return (

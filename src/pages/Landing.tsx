@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EnterpriseLeadModal } from '@/components/EnterpriseLeadModal';
 
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
@@ -243,6 +244,8 @@ export default function Landing() {
   const closing = useFadeIn(0.1);
 
   const [scrolled, setScrolled] = useState(false);
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
+
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', h, { passive: true });
@@ -601,102 +604,180 @@ export default function Landing() {
             <span style={{ color: C.oatmeal, fontWeight: 400 }}>escalar sua operação.</span>
           </h2>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
-            {/* Starter */}
-            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+            {/* Basic */}
+            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none', display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: 4, background: C.oatmealDim, width: '100%', borderRadius: '4px 4px 0 0' }} />
               <CardHeader>
-                <CardTitle style={{ color: C.palladian }}>Starter</CardTitle>
-                <CardDescription>Para pequenas agências ou freelancers.</CardDescription>
+                <CardTitle style={{ color: C.palladian }}>Basic</CardTitle>
+                <CardDescription>Para começar sua gestão.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent style={{ flex: 1 }}>
                 <div style={{ marginBottom: 20 }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 97</span>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 49</span>
                   <span style={{ color: C.oatmeal }}>/mês</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {['Até 5 usuários', 'Kanban Ilimitado', 'Suporte por Email', 'Relatórios Básicos'].map(f => (
+                  {[
+                    '1 Usuário',
+                    '3 Projetos Ativos',
+                    'Kanban Visual',
+                    'Wiki do Projeto',
+                  ].map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <CheckCircle2 size={16} color={C.oatmealDim} />
-                      <span style={{ fontSize: '0.9rem', color: C.oatmeal }}>{f}</span>
+                      <span style={{ fontSize: '0.85rem', color: C.oatmeal }}>{f}</span>
+                    </div>
+                  ))}
+                  {[
+                    'Notificações WhatsApp',
+                    'Relatórios de Gargalo',
+                  ].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.4 }}>
+                      <X size={16} color={C.oatmealDim} />
+                      <span style={{ fontSize: '0.85rem', color: C.oatmealDim, textDecoration: 'line-through' }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
               <CardFooter>
-                <Link to="/auth" style={{ width: '100%' }}>
+                <a href="https://pay.cakto.com.br/34bt8zp" target="_blank" rel="noopener noreferrer" style={{ width: '100%', textDecoration: 'none' }}>
                   <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: `1px solid ${C.borderSubtle}`, background: 'transparent', color: C.palladian, fontWeight: 600, cursor: 'pointer' }}>
-                    Começar Trial
+                    Escolher Basic
                   </button>
-                </Link>
+                </a>
               </CardFooter>
             </Card>
 
-            {/* PRO */}
-            <Card style={{ background: C.bgDeep, borderColor: C.gold, position: 'relative', transform: 'scale(1.05)', zIndex: 10, boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(251,191,36,0.1)' }}>
+            {/* Standard */}
+            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ height: 4, background: '#475569', width: '100%', borderRadius: '4px 4px 0 0' }} />
+              <CardHeader>
+                <CardTitle style={{ color: C.palladian }}>Standard</CardTitle>
+                <CardDescription>Para pequenas equipes.</CardDescription>
+              </CardHeader>
+              <CardContent style={{ flex: 1 }}>
+                <div style={{ marginBottom: 20 }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 99</span>
+                  <span style={{ color: C.oatmeal }}>/mês</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {[
+                    'Até 3 Usuários',
+                    '10 Projetos Ativos',
+                    'Kanban Visual',
+                    'Wiki do Projeto',
+                  ].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckCircle2 size={16} color={C.oatmealDim} />
+                      <span style={{ fontSize: '0.85rem', color: C.oatmeal }}>{f}</span>
+                    </div>
+                  ))}
+                  {[
+                    'Notificações WhatsApp',
+                    'Relatórios de Gargalo',
+                  ].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10, opacity: 0.4 }}>
+                      <X size={16} color={C.oatmealDim} />
+                      <span style={{ fontSize: '0.85rem', color: C.oatmealDim, textDecoration: 'line-through' }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <a href="https://pay.cakto.com.br/ieah9nj_849299" target="_blank" rel="noopener noreferrer" style={{ width: '100%', textDecoration: 'none' }}>
+                  <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: `1px solid ${C.borderSubtle}`, background: 'transparent', color: C.palladian, fontWeight: 600, cursor: 'pointer' }}>
+                    Escolher Standard
+                  </button>
+                </a>
+              </CardFooter>
+            </Card>
+
+            {/* Profissional */}
+            <Card style={{ background: C.bgDeep, borderColor: C.gold, position: 'relative', transform: 'scale(1.05)', zIndex: 10, boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(251,191,36,0.1)', display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: 4, background: C.gradientCta, width: '100%', borderRadius: '4px 4px 0 0' }} />
               <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)' }}>
-                <Badge style={{ background: C.gold, color: C.bg, fontWeight: 700 }}>MAIS POPULAR</Badge>
+                <Badge style={{ background: C.gold, color: C.bg, fontWeight: 700 }}>RECOMENDADO</Badge>
               </div>
               <CardHeader>
                 <CardTitle style={{ color: C.palladian, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  PRÓ <Star size={18} fill={C.gold} color={C.gold} />
+                  Profissional <Star size={18} fill={C.gold} color={C.gold} />
                 </CardTitle>
-                <CardDescription style={{ color: C.oatmeal }}>Para agências em escala que buscam automação.</CardDescription>
+                <CardDescription style={{ color: C.oatmeal }}>O plano ideal para agências em crescimento.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent style={{ flex: 1 }}>
                 <div style={{ marginBottom: 20 }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 247</span>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 249</span>
                   <span style={{ color: C.oatmeal }}>/mês</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {['Usuários Ilimitados', 'Robô de WhatsApp Nativo', 'Wiki & Playbooks', 'Portal do Cliente', 'Relatórios Avançados'].map(f => (
+                  {[
+                    'Até 10 Usuários',
+                    '30 Projetos Ativos',
+                    'Notificações WhatsApp',
+                    'Relatórios de Gargalo',
+                    'Wiki & Processos',
+                    'Portal do Cliente',
+                  ].map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <CheckCircle2 size={16} color={C.gold} />
-                      <span style={{ fontSize: '0.9rem', color: C.palladian, fontWeight: 500 }}>{f}</span>
+                      <span style={{ fontSize: '0.85rem', color: C.palladian, fontWeight: 500 }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
               <CardFooter>
-                <Link to="/auth" style={{ width: '100%' }}>
+                <a href="https://pay.cakto.com.br/bdzd6t9" target="_blank" rel="noopener noreferrer" style={{ width: '100%', textDecoration: 'none' }}>
                   <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: 'none', background: C.gradientCta, color: C.bg, fontWeight: 700, cursor: 'pointer' }}>
-                    Escolher Plano PRÓ
+                    Ativar Agora
                   </button>
-                </Link>
+                </a>
               </CardFooter>
             </Card>
 
-            {/* Elite */}
-            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none' }}>
+            {/* Enterprise */}
+            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none', display: 'flex', flexDirection: 'column' }}>
               <div style={{ height: 4, background: '#1e293b', width: '100%', borderRadius: '4px 4px 0 0' }} />
               <CardHeader>
-                <CardTitle style={{ color: C.palladian }}>Elite</CardTitle>
-                <CardDescription>Para operações complexas de alta demanda.</CardDescription>
+                <CardTitle style={{ color: C.palladian }}>Enterprise</CardTitle>
+                <CardDescription>Escala total sem limites.</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent style={{ flex: 1 }}>
                 <div style={{ marginBottom: 20 }}>
-                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 497</span>
+                  <span style={{ fontSize: '2.1rem', fontWeight: 800, color: C.palladian }}>R$ 899</span>
                   <span style={{ color: C.oatmeal }}>/mês</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {['Tudo do PRÓ', 'Suporte Prioritário 1-on-1', 'Treinamento de Equipe', 'Multitenancy Especial', 'Acesso Antecipado a IA'].map(f => (
+                  {[
+                    'Usuários Ilimitados',
+                    'Projetos Ilimitados',
+                    'Múltiplas Conexões WhatsApp',
+                    'Relatórios Customizados',
+                    'Suporte Prioritário 1-on-1',
+                    'Treinamento de Equipe',
+                  ].map(f => (
                     <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <CheckCircle2 size={16} color={C.palladian} />
-                      <span style={{ fontSize: '0.9rem', color: C.oatmeal }}>{f}</span>
+                      <span style={{ fontSize: '0.85rem', color: C.oatmeal }}>{f}</span>
                     </div>
                   ))}
                 </div>
               </CardContent>
               <CardFooter>
-                <Link to="/auth" style={{ width: '100%' }}>
-                  <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: `1px solid ${C.borderSubtle}`, background: 'transparent', color: C.palladian, fontWeight: 600, cursor: 'pointer' }}>
-                    Assinar Elite
-                  </button>
-                </Link>
+                <button 
+                  onClick={() => setEnterpriseModalOpen(true)}
+                  style={{ width: '100%', padding: '12px', borderRadius: '4px', border: `1px solid ${C.borderSubtle}`, background: 'transparent', color: C.palladian, fontWeight: 600, cursor: 'pointer' }}
+                >
+                  Falar com Consultor
+                </button>
               </CardFooter>
             </Card>
           </div>
+
+          <EnterpriseLeadModal 
+            isOpen={enterpriseModalOpen}
+            onClose={() => setEnterpriseModalOpen(false)}
+          />
         </div>
       </section>
 

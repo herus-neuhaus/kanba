@@ -25,10 +25,12 @@ import {
   QrCode,
   LogOut,
   RefreshCw,
-  CheckCircle2
+  CheckCircle2,
+  X
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { EnterpriseLeadModal } from '@/components/EnterpriseLeadModal';
 import { cn } from '@/lib/utils';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
@@ -41,6 +43,7 @@ export default function Settings() {
   const { isConnected, loading: waLoading, instanceName } = useWhatsappStatus(agency?.id, agency?.name);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [waInstanceLoading, setWaInstanceLoading] = useState(false);
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
 
   const [isDemandLoading, setIsDemandLoading] = useState(false);
 
@@ -642,82 +645,110 @@ export default function Settings() {
                </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                 {/* Starter */}
-                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", (agency?.plan_type === 'starter') ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                 {/* Basic */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", (agency?.plan_type === 'basic') ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
                     <div className="flex justify-between items-start">
                        <div>
-                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-muted-foreground">Starter</h3>
-                         <p className="font-black text-3xl mt-2">R$ 97<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                         <h3 className="font-extrabold text-sm uppercase tracking-widest text-muted-foreground">Basic</h3>
+                         <p className="font-black text-2xl mt-2">R$ 49<span className="text-xs text-muted-foreground font-medium">/mês</span></p>
                        </div>
-                       {(agency?.plan_type === 'starter') && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                       {(agency?.plan_type === 'basic') && <Badge className="bg-primary/10 text-primary">Ativo</Badge>}
                     </div>
-                    <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Até 5 Projetos</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Kanban ilimitado</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Suporte via Chat</li>
+                    <ul className="space-y-2 flex-1 mt-4 text-[10px] font-bold uppercase tracking-tight text-foreground/80">
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> 1 Usuário</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> 3 Projetos</li>
+                      <li className="flex items-center gap-2 text-muted-foreground/50 line-through"><X className="h-3 w-3" /> WhatsApp</li>
                     </ul>
                     <Button 
-                       variant={(agency?.plan_type === 'starter') ? 'outline' : 'default'}
-                       className="w-full font-bold uppercase tracking-widest mt-auto shadow"
-                       disabled={(agency?.plan_type === 'starter' && agency?.subscription_status === 'active')}
-                       onClick={() => handleUpgradePlan('https://pay.cakto.com.br/34bt8zp')}
-                    >
-                       {(agency?.plan_type === 'starter' && agency?.subscription_status === 'active') ? 'Ativo' : 'Escolher Starter'}
-                    </Button>
+                        variant={(agency?.plan_type === 'basic') ? 'outline' : 'default'}
+                        className="w-full font-bold uppercase tracking-widest mt-auto shadow text-[10px] h-9"
+                        disabled={(agency?.plan_type === 'basic' && agency?.subscription_status === 'active')}
+                        onClick={() => handleUpgradePlan('https://pay.cakto.com.br/34bt8zp')}
+                     >
+                        {(agency?.plan_type === 'basic' && agency?.subscription_status === 'active') ? 'Ativo' : 'Escolher'}
+                     </Button>
                  </div>
 
-                 {/* Growth */}
-                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50 relative overflow-hidden", agency?.plan_type === 'pro' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
-                    {agency?.plan_type !== 'pro' && <div className="absolute top-0 right-0 bg-primary px-3 py-1 rounded-bl-xl font-bold text-[9px] uppercase text-primary-foreground tracking-widest">Recomendado</div>}
+                 {/* Standard */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", (agency?.plan_type === 'standard') ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
                     <div className="flex justify-between items-start">
                        <div>
-                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-primary">Pro</h3>
-                         <p className="font-black text-3xl mt-2">R$ 247<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                         <h3 className="font-extrabold text-sm uppercase tracking-widest text-muted-foreground">Standard</h3>
+                         <p className="font-black text-2xl mt-2">R$ 99<span className="text-xs text-muted-foreground font-medium">/mês</span></p>
                        </div>
-                       {agency?.plan_type === 'pro' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                       {(agency?.plan_type === 'standard') && <Badge className="bg-primary/10 text-primary">Ativo</Badge>}
                     </div>
-                    <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
-                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Projetos ilimitados</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Dashboard de Relatórios</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Automação WhatsApp</li>
+                    <ul className="space-y-2 flex-1 mt-4 text-[10px] font-bold uppercase tracking-tight text-foreground/80">
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> 3 Usuários</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> 10 Projetos</li>
+                      <li className="flex items-center gap-2 text-muted-foreground/50 line-through"><X className="h-3 w-3" /> WhatsApp</li>
                     </ul>
                     <Button 
-                       variant={agency?.plan_type === 'pro' ? 'outline' : 'default'}
-                       className="w-full font-bold uppercase tracking-widest mt-auto shadow"
-                       disabled={agency?.plan_type === 'pro' && agency?.subscription_status === 'active'}
-                       onClick={() => handleUpgradePlan('https://pay.cakto.com.br/bdzd6t9')}
-                    >
-                       {agency?.plan_type === 'pro' && agency?.subscription_status === 'active' ? 'Ativo' : 'Ativar Agora'}
-                    </Button>
+                        variant={(agency?.plan_type === 'standard') ? 'outline' : 'default'}
+                        className="w-full font-bold uppercase tracking-widest mt-auto shadow text-[10px] h-9"
+                        disabled={(agency?.plan_type === 'standard' && agency?.subscription_status === 'active')}
+                        onClick={() => handleUpgradePlan('https://pay.cakto.com.br/ieah9nj_849299')}
+                     >
+                        {(agency?.plan_type === 'standard' && agency?.subscription_status === 'active') ? 'Ativo' : 'Escolher'}
+                     </Button>
                  </div>
 
-                 {/* Elite */}
-                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", agency?.plan_type === 'elite' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                 {/* Profissional */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50 relative overflow-hidden", agency?.plan_type === 'profissional' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                    <div className="absolute top-0 right-0 bg-primary px-3 py-1 rounded-bl-xl font-bold text-[8px] uppercase text-primary-foreground tracking-widest">Popular</div>
                     <div className="flex justify-between items-start">
                        <div>
-                         <h3 className="font-extrabold text-xl uppercase tracking-widest text-foreground">Elite</h3>
-                         <p className="font-black text-3xl mt-2">R$ 497<span className="text-base text-muted-foreground font-medium">/mês</span></p>
+                         <h3 className="font-extrabold text-sm uppercase tracking-widest text-primary">Profissional</h3>
+                         <p className="font-black text-2xl mt-2">R$ 249<span className="text-xs text-muted-foreground font-medium">/mês</span></p>
                        </div>
-                       {agency?.plan_type === 'elite' && <Badge className="bg-primary/10 text-primary">Plano Atual</Badge>}
+                       {agency?.plan_type === 'profissional' && <Badge className="bg-primary/10 text-primary">Ativo</Badge>}
                     </div>
-                    <ul className="space-y-2 flex-1 mt-4 text-sm font-medium text-foreground/80">
-                      <li className="flex items-center gap-2 font-bold"><CheckCircle2 className="h-4 w-4 text-primary" /> Gestão de Equipe</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Wiki do Projeto</li>
-                      <li className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4 text-primary" /> Suporte Prioritário</li>
+                    <ul className="space-y-2 flex-1 mt-4 text-[10px] font-bold uppercase tracking-tight text-foreground/80">
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> 10 Usuários</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> 30 Projetos</li>
+                      <li className="flex items-center gap-2 font-black text-primary"><CheckCircle2 className="h-3 w-3" /> Automação WhatsApp</li>
                     </ul>
                     <Button 
-                       variant={agency?.plan_type === 'elite' ? 'outline' : 'default'}
-                       className="w-full font-bold uppercase tracking-widest mt-auto shadow"
-                       disabled={agency?.plan_type === 'elite' && agency?.subscription_status === 'active'}
-                       onClick={() => handleUpgradePlan('https://pay.cakto.com.br/3et7uft')}
-                    >
-                       {agency?.plan_type === 'elite' && agency?.subscription_status === 'active' ? 'Ativo' : 'Assinar Elite'}
-                    </Button>
+                        variant={agency?.plan_type === 'profissional' ? 'outline' : 'default'}
+                        className="w-full font-bold uppercase tracking-widest mt-auto shadow text-[10px] h-9"
+                        disabled={agency?.plan_type === 'profissional' && agency?.subscription_status === 'active'}
+                        onClick={() => handleUpgradePlan('https://pay.cakto.com.br/bdzd6t9')}
+                     >
+                        {agency?.plan_type === 'profissional' && agency?.subscription_status === 'active' ? 'Ativo' : 'Upgrade'}
+                     </Button>
+                 </div>
+
+                 {/* Enterprise */}
+                 <div className={cn("p-6 rounded-2xl border-2 flex flex-col gap-4 transition-all hover:border-primary/50", agency?.plan_type === 'enterprise' ? "border-primary bg-primary/[0.02]" : "border-border/50")}>
+                    <div className="flex justify-between items-start">
+                       <div>
+                         <h3 className="font-extrabold text-sm uppercase tracking-widest text-foreground">Enterprise</h3>
+                         <p className="font-black text-2xl mt-2">R$ 899<span className="text-xs text-muted-foreground font-medium">/mês</span></p>
+                       </div>
+                       {agency?.plan_type === 'enterprise' && <Badge className="bg-primary/10 text-primary">Ativo</Badge>}
+                    </div>
+                    <ul className="space-y-2 flex-1 mt-4 text-[10px] font-bold uppercase tracking-tight text-foreground/80">
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> Ilimitado</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> Múltiplos WhatsApp</li>
+                      <li className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-primary" /> Suporte VIP</li>
+                    </ul>
+                    <Button 
+                        variant={agency?.plan_type === 'enterprise' ? 'outline' : 'default'}
+                        className="w-full font-bold uppercase tracking-widest mt-auto shadow text-[10px] h-9"
+                        disabled={agency?.plan_type === 'enterprise' && agency?.subscription_status === 'active'}
+                        onClick={() => setEnterpriseModalOpen(true)}
+                     >
+                        {agency?.plan_type === 'enterprise' && agency?.subscription_status === 'active' ? 'Ativo' : 'Consultar'}
+                     </Button>
                  </div>
               </div>
             </CardContent>
           </Card>
+          <EnterpriseLeadModal 
+            isOpen={enterpriseModalOpen}
+            onClose={() => setEnterpriseModalOpen(false)}
+          />
         </TabsContent>
         
       </Tabs>

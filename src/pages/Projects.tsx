@@ -12,12 +12,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast as sonnerToast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 
-const PLAN_LIMITS: Record<string, number> = {
-  trial: 2,
-  starter: 2,
-  pro: 10,
-  elite: 9999
-};
+import { PLANS, type PlanType } from '@/config/plans';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,8 +41,9 @@ export default function Projects() {
   const { agency } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   
-  const currentPlanType = agency?.plan_type?.toLowerCase() || 'trial';
-  const limit = PLAN_LIMITS[currentPlanType] || 2;
+  const currentPlanType = (agency?.plan_type?.toLowerCase() || 'trial') as PlanType;
+  const planConfig = PLANS[currentPlanType] || PLANS.trial;
+  const limit = planConfig.max_projects;
   const isOverLimit = projects.length >= limit;
   
   const [name, setName] = useState('');
@@ -144,7 +140,7 @@ export default function Projects() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Meus Projetos</h1>
-          <p className="text-muted-foreground">Gerencie seus projetos e as demandas de cada um ({projects.length}/{limit}).</p>
+          <p className="text-muted-foreground">Gerencie seus projetos e as demandas de cada um ({projects.length}/{limit === Infinity ? '∞' : limit}).</p>
         </div>
         <Button size="lg" className="shadow-sm" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>
           <Plus className="h-5 w-5 mr-2" /> Novo Projeto
@@ -278,7 +274,7 @@ export default function Projects() {
                <AlertCircle className="h-8 w-8 text-primary" />
             </div>
             <p className="text-muted-foreground font-medium px-4">
-              Sua agência atingiu o limite de <strong className="text-foreground">{limit} projetos</strong> do plano atual (<span className="uppercase text-primary font-bold">{agency?.plan_type || 'Trial'}</span>).
+              Sua agência atingiu o limite de <strong className="text-foreground">{limit} projetos</strong> do plano atual (<span className="uppercase text-primary font-bold">{planConfig.name}</span>).
             </p>
             <div className="bg-muted/50 p-4 rounded-xl text-sm font-bold text-foreground mx-4">
               Dê o próximo passo! Faça um upgrade para continuar criando novos projetos e escalando suas operações sem limites.
@@ -287,6 +283,7 @@ export default function Projects() {
           <DialogFooter className="flex-col sm:flex-col gap-2 w-full">
             <Button className="w-full font-bold shadow-lg shadow-primary/20" size="lg" onClick={() => {
                  setUpgradeOpen(false);
+                 navigate('/settings?tab=plans');
             }}>
                Fazer Upgrade Agora 🚀
             </Button>

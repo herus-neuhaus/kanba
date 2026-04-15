@@ -1,8 +1,30 @@
-import React from 'react';
-import { Rocket, Sparkles, Users, ArrowRight, Zap } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { PLANS, type PlanType } from '@/config/plans';
+import { Lock, Rocket, Sparkles, Users, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 
 export default function CRM() {
+  const { agency } = useAuth();
+  const currentPlanType = (agency?.plan_type?.toLowerCase() || 'trial') as PlanType;
+  const planConfig = PLANS[currentPlanType] || PLANS.trial;
+
+  if (!planConfig.has_whatsapp) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6 animate-fade-in px-4">
+        <div className="p-6 rounded-full bg-primary/10 text-primary border-2 border-primary/20 shadow-2xl">
+          <Lock className="h-16 w-16" />
+        </div>
+        <div className="space-y-2 max-w-md">
+            <h1 className="text-3xl font-black tracking-tight text-white uppercase italic">Módulo <span className="text-primary not-italic">Restrito</span></h1>
+            <p className="text-muted-foreground font-medium uppercase text-xs tracking-widest">O CRM e a Automação de WhatsApp estão disponíveis a partir do plano <span className="text-primary font-bold">PROFISSIONAL</span>.</p>
+        </div>
+        <Button asChild className="rounded-full px-8 font-black uppercase tracking-widest text-[10px] h-11 shadow-lg shadow-primary/20">
+            <Link to="/settings">Fazer Upgrade Agora 🚀</Link>
+        </Button>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 animate-fade-in text-center">
       {/* Decorative elements */}

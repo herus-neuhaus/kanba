@@ -9,10 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useNavigate } from 'react-router-dom';
 import { Users, UserPlus, Copy, Check, Trash2, Mail, Clock, MoreVertical, Shield, ShieldCheck, UserMinus, UserCheck, UserX } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { ProjectAccessDialog } from '@/components/features/ProjectAccessDialog';
+import { PLANS, type PlanType } from '@/config/plans';
+import { AlertCircle } from 'lucide-react';
 
 export default function Team() {
   const { data: team = [], updateStatus, removeMember } = useTeam();
@@ -20,6 +23,7 @@ export default function Team() {
   const { user, profile } = useAuth();
   const { toast } = useToast();
   
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [email, setEmail] = useState('');
@@ -28,6 +32,14 @@ export default function Team() {
   // Project Access Logic
   const [accessDialogOpen, setAccessDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<{ id: string, name: string } | null>(null);
+  
+  const { agency } = useAuth();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+
+  const currentPlanType = (agency?.plan_type?.toLowerCase() || 'trial') as PlanType;
+  const planConfig = PLANS[currentPlanType] || PLANS.trial;
+  const userLimit = planConfig.max_users;
+  const isOverLimit = team.length >= userLimit;
 
   const handleOpenAccess = (user: { id: string, name: string }) => {
     setSelectedUser(user);
@@ -56,8 +68,9 @@ export default function Team() {
   };
 
   return (
-    <div className="space-y-8 animate-fade-in pb-12">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <>
+      <div className="space-y-8 animate-fade-in pb-12">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight uppercase italic">Gestão <span className="text-primary not-italic inline-block">Equipe</span></h1>
           <p className="text-muted-foreground mt-1 text-sm font-bold uppercase tracking-widest opacity-60">Diretoria Operacional da Agência</p>
@@ -66,7 +79,16 @@ export default function Team() {
         {isOwner && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button size="lg" className="shadow-lg shadow-primary/20 gap-2 font-black uppercase tracking-widest text-xs h-12">
+              <Button 
+                size="lg" 
+                className="shadow-lg shadow-primary/20 gap-2 font-black uppercase tracking-widest text-xs h-12"
+                onClick={(e) => {
+                  if (isOverLimit) {
+                    e.preventDefault();
+                    setUpgradeOpen(true);
+                  }
+                }}
+              >
                 <UserPlus className="h-4 w-4" /> Novo Colaborador
               </Button>
             </DialogTrigger>
@@ -121,7 +143,9 @@ export default function Team() {
              </div>
              <div>
                 <CardTitle className="text-xl font-black uppercase tracking-tight">Status do Time</CardTitle>
-                <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Quadro Ativo e Convites em Processamento</CardDescription>
+                 <CardDescription className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">
+                   {team.length} de {userLimit === Infinity ? '∞' : userLimit} Assentos Ocupados
+                 </CardDescription>
              </div>
           </div>
         </CardHeader>
@@ -301,5 +325,37 @@ export default function Team() {
         />
       )}
     </div>
+    
+    {/* Upgrade Paywall Dialog */}
+    <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
+      <DialogContent className="sm:max-w-md text-center border-none shadow-2xl">
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-black mx-auto mt-2 uppercase tracking-tighter">Assentos Esgotados</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+             <AlertCircle className="h-8 w-8 text-primary" />
+          </div>
+          <p className="text-muted-foreground font-medium px-4">
+            Sua agência atingiu o limite de <strong className="text-foreground">{userLimit} usuários</strong> do plano <span className="uppercase text-primary font-bold">{planConfig.name}</span>.
+          </p>
+          <div className="bg-muted/50 p-4 rounded-xl text-[10px] font-bold uppercase tracking-widest text-foreground mx-4 leading-relaxed">
+            Sua equipe está crescendo! Libere novos assentos e ferramentas avançadas fazendo o upgrade para o plano superior.
+          </div>
+        </div>
+        <DialogFooter className="flex-col sm:flex-col gap-2 w-full">
+          <Button className="w-full font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20" onClick={() => {
+            setUpgradeOpen(false);
+            navigate('/settings?tab=plans');
+          }}>
+             Expandir meu Time 🚀
+          </Button>
+          <Button variant="ghost" className="w-full text-muted-foreground font-bold uppercase text-[10px]" onClick={() => setUpgradeOpen(false)}>
+             Talvez depois
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }

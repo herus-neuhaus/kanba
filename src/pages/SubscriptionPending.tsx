@@ -4,10 +4,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Check, Crown, Zap, Rocket, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { EnterpriseLeadModal } from '@/components/EnterpriseLeadModal';
 
 const SubscriptionPending = () => {
   const { agency, signOut, loading } = useAuth();
   const navigate = useNavigate();
+
+  const [enterpriseModalOpen, setEnterpriseModalOpen] = React.useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -16,30 +19,39 @@ const SubscriptionPending = () => {
 
   const plans = [
     {
-      name: 'Starter',
-      price: 'R$ 97',
+      name: 'Basic',
+      price: 'R$ 49',
       link: 'https://pay.cakto.com.br/34bt8zp',
-      type: 'starter',
-      icon: <Rocket className="h-6 w-6 text-blue-500" />,
-      features: ['Até 5 projetos', 'Kanban ilimitado', 'Suporte via Chat'],
+      type: 'basic',
+      icon: <Rocket className="h-6 w-6 text-indigo-500" />,
+      features: ['1 Usuário', '3 Projetos Ativos', 'Kanban Visual'],
       highlight: false
     },
     {
-      name: 'Pro',
-      price: 'R$ 247',
+      name: 'Standard',
+      price: 'R$ 99',
+      link: 'https://pay.cakto.com.br/ieah9nj_849299',
+      type: 'standard',
+      icon: <Zap className="h-6 w-6 text-blue-500" />,
+      features: ['Até 3 usuários', '10 Projetos Ativos', 'Fluxo de Demandas'],
+      highlight: false
+    },
+    {
+      name: 'Profissional',
+      price: 'R$ 249',
       link: 'https://pay.cakto.com.br/bdzd6t9',
-      type: 'pro',
-      icon: <Zap className="h-6 w-6 text-amber-500" />,
-      features: ['Projetos ilimitados', 'Dashboard de Relatórios', 'Automação WhatsApp'],
+      type: 'profissional',
+      icon: <Check className="h-6 w-6 text-amber-500" />,
+      features: ['10 Usuários', '30 Projetos', 'WhatsApp Automático'],
       highlight: true
     },
     {
-      name: 'Elite',
-      price: 'R$ 497',
-      link: 'https://pay.cakto.com.br/3et7uft',
-      type: 'elite',
+      name: 'Enterprise',
+      price: 'R$ 899',
+      link: null, // Modal trigger
+      type: 'enterprise',
       icon: <Crown className="h-6 w-6 text-purple-500" />,
-      features: ['Gestão de Equipe', 'Wiki do Projeto', 'Suporte Prioritário'],
+      features: ['Ilimitado', 'Múltiplos WhatsApp', 'Suporte Prioritário'],
       highlight: false
     }
   ];
@@ -60,7 +72,7 @@ const SubscriptionPending = () => {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl w-full">
         {plans.map((plan) => {
           const isCurrent = agency?.plan_type === plan.type;
           const isActive = agency?.subscription_status === 'active';
@@ -120,6 +132,10 @@ const SubscriptionPending = () => {
                   >
                     {isCurrent && isActive ? (
                       <span>Assinatura Ativa</span>
+                    ) : plan.type === 'enterprise' ? (
+                      <button onClick={() => setEnterpriseModalOpen(true)} className="w-full h-full text-center">
+                        Falar com Consultor
+                      </button>
                     ) : (
                       <a href={`${plan.link}?external_id=${agency.id}`}>
                         Assinar Agora
@@ -141,6 +157,10 @@ const SubscriptionPending = () => {
           Sair da Conta
         </Button>
       </div>
+      <EnterpriseLeadModal 
+        isOpen={enterpriseModalOpen}
+        onClose={() => setEnterpriseModalOpen(false)}
+      />
     </div>
   );
 };

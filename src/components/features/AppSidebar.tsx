@@ -1,4 +1,5 @@
-import { LayoutDashboard, FolderKanban, Settings, LogOut, Users, Zap, ShieldCheck, HelpCircle, BarChart3 } from 'lucide-react';
+import { LayoutDashboard, FolderKanban, Settings, LogOut, Users, Zap, ShieldCheck, HelpCircle, BarChart3, Lock } from 'lucide-react';
+import { PLANS, type PlanType } from '@/config/plans';
 import { NavLink } from '@/components/NavLink';
 import { useLocation, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,6 +27,9 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const { profile, agency, signOut } = useAuth();
   const location = useLocation();
+
+  const currentPlanType = (agency?.plan_type?.toLowerCase() || 'trial') as PlanType;
+  const planConfig = PLANS[currentPlanType] || PLANS.trial;
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border/50 bg-background/50 backdrop-blur-xl">
@@ -67,34 +71,50 @@ export function AppSidebar() {
                   }
                   return true;
                 })
-                .map(item => (
-                  <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-11">
-                    <NavLink 
-                      to={item.url} 
-                      end={item.url === '/dashboard'} 
-                      className="group flex items-center gap-3 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10" 
-                      activeClassName="bg-primary/15 text-primary font-bold shadow-sm ring-1 ring-primary/20"
-                    >
-                      <div className={cn(
-                        "p-1.5 rounded-md transition-colors",
-                        location.pathname === item.url ? "bg-primary/20" : "bg-transparent group-hover:bg-primary/10"
-                      )}>
-                        <item.icon className="h-4.5 w-4.5" />
-                      </div>
-                      {!collapsed && <span className="text-sm tracking-tight">{item.title}</span>}
-                      {!collapsed && item.badge && (
-                        <Badge className="ml-auto bg-primary text-primary-foreground border-none h-4 px-1.5 text-[8px] font-black uppercase tracking-tighter shadow-lg shadow-primary/20">
-                          {item.badge}
-                        </Badge>
-                      )}
-                      {!collapsed && item.title === 'Atrasadas' && (
-                        <Badge className="ml-auto bg-destructive/10 text-destructive border-none h-5 text-[10px] font-black">3</Badge>
-                      )}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                .map(item => {
+                  const isLocked = (item.title === 'Relatórios' && !planConfig.has_reports) || 
+                                   (item.title === 'CRM' && !planConfig.has_whatsapp);
+                  
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton 
+                        asChild 
+                        className={cn("h-11", isLocked && "opacity-50 cursor-not-allowed")}
+                        disabled={isLocked}
+                      >
+                        {isLocked ? (
+                          <div className="flex items-center gap-3 px-3 w-full text-muted-foreground/60 select-none">
+                            <div className="p-1.5 rounded-md bg-transparent">
+                              <item.icon className="h-4.5 w-4.5" />
+                            </div>
+                            {!collapsed && <span className="text-sm tracking-tight">{item.title}</span>}
+                            {!collapsed && <Lock className="h-3 w-3 ml-auto opacity-50" />}
+                          </div>
+                        ) : (
+                          <NavLink 
+                            to={item.url} 
+                            end={item.url === '/dashboard'} 
+                            className="group flex items-center gap-3 px-3 rounded-lg transition-all duration-300 hover:bg-primary/10" 
+                            activeClassName="bg-primary/15 text-primary font-bold shadow-sm ring-1 ring-primary/20"
+                          >
+                            <div className={cn(
+                              "p-1.5 rounded-md transition-colors",
+                              location.pathname === item.url ? "bg-primary/20" : "bg-transparent group-hover:bg-primary/10"
+                            )}>
+                              <item.icon className="h-4.5 w-4.5" />
+                            </div>
+                            {!collapsed && <span className="text-sm tracking-tight">{item.title}</span>}
+                            {!collapsed && item.badge && (
+                              <Badge className="ml-auto bg-primary text-primary-foreground border-none h-4 px-1.5 text-[8px] font-black uppercase tracking-tighter shadow-lg shadow-primary/20">
+                                {item.badge}
+                              </Badge>
+                            )}
+                          </NavLink>
+                        )}
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
@@ -102,13 +122,15 @@ export function AppSidebar() {
         {!collapsed && (
           <div className="mt-auto px-6 py-8">
              <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/5 ring-1 ring-border/50 space-y-3 shadow-xl shadow-primary/5">
-                <div className="flex items-center gap-2 text-primary">
+                 <div className="flex items-center gap-2 text-primary">
                   <Zap className="h-3.5 w-3.5 fill-primary" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Nível Pro</span>
+                  <span className="text-[10px] font-black uppercase tracking-widest">Plano {planConfig.name}</span>
                 </div>
                 <div className="space-y-1">
-                  <p className="text-[11px] font-bold leading-tight">Métricas Avançadas</p>
-                  <p className="text-[9px] text-muted-foreground leading-relaxed">Suas automações de WhatsApp estão ativas para este ciclo.</p>
+                  <p className="text-[11px] font-bold leading-tight">Métricas e Fluxos</p>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed">
+                    {planConfig.has_whatsapp ? 'WhatsApp e Relatórios Ativos.' : 'Upgrade para liberar WhatsApp.'}
+                  </p>
                 </div>
                 <Button variant="ghost" className="w-full h-7 text-[9px] font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors">
                   Ver Relatórios
@@ -130,7 +152,7 @@ export function AppSidebar() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-black truncate tracking-tight">{profile?.full_name}</p>
                 <div className="flex items-center gap-1.5">
-                   <Badge variant="outline" className="h-4 px-1 text-[8px] border-primary/20 text-primary uppercase font-black tracking-tighter">Owner</Badge>
+                   <Badge variant="outline" className="h-4 px-1 text-[8px] border-primary/20 text-primary uppercase font-black tracking-tighter">{planConfig.name}</Badge>
                    <p className="text-[9px] text-muted-foreground truncate italic">{agency?.name}</p>
                 </div>
               </div>

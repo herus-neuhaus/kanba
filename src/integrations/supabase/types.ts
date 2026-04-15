@@ -101,6 +101,44 @@ export type Database = {
           },
         ]
       }
+      enterprise_leads: {
+        Row: {
+          agency_id: string | null
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          team_size: string
+          whatsapp: string
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string | null
+          email: string
+          id?: string
+          name: string
+          team_size: string
+          whatsapp: string
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          team_size?: string
+          whatsapp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enterprise_leads_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invites: {
         Row: {
           agency_id: string
@@ -349,7 +387,7 @@ export type Database = {
           progress?: number | null
         }
         Update: {
-          agency_id?: string
+          agency_id: string
           created_at?: string | null
           description?: string | null
           id?: string
@@ -402,7 +440,7 @@ export type Database = {
           title: string
         }
         Update: {
-          agency_id?: string
+          agency_id: string
           assignee_ids?: string[] | null
           checklist?: Json | null
           column_id?: string | null
@@ -583,3 +621,9 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const
