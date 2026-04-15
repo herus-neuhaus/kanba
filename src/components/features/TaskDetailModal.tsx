@@ -26,7 +26,7 @@ import { useComments } from '@/hooks/useComments';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { DEMAND_TYPES } from '@/types';
-import { Send, Plus, Trash2, Save, X } from 'lucide-react';
+import { Send, Plus, Trash2, Save, X, Layout, Users, Calendar, AlignLeft, CheckSquare, MessageSquare } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sendWhatsAppNotification } from '@/lib/evolution';
@@ -73,6 +73,11 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
   const handleSaveAndExit = async () => {
     try {
       const { assignees, project, column, comments, created_at, ...payload } = cardData;
+
+      // Ensure due_date is saved as end-of-day ISO to avoid timezone shifts
+      if (payload.due_date && payload.due_date.length === 10) {
+        payload.due_date = new Date(payload.due_date + 'T23:59:59').toISOString();
+      }
 
       if (!payload.assignee_ids || payload.assignee_ids.length === 0) {
         toast({ title: 'Aviso', description: 'Por favor, atribua pelo menos um responsável.', variant: 'destructive' });
@@ -243,16 +248,20 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Coluna</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <Layout className="h-3 w-3" /> Coluna
+              </label>
               <Select disabled={isClient} value={cardData.column_id || ''} onValueChange={v => updateCardLocal({ column_id: v })}>
-                <SelectTrigger className="w-full"><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectTrigger className="w-full premium-input"><SelectValue placeholder="Selecione..." /></SelectTrigger>
                 <SelectContent>
                   {columns.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5 min-h-[70px]">
-              <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Responsável</label>
+              <label className="text-xs font-semibold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <Users className="h-3 w-3" /> Responsável
+              </label>
               {!isClient && (
                 <Select value="" onValueChange={v => {
                    const currentIds = cardData.assignee_ids || [];
@@ -260,7 +269,7 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
                      updateCardLocal({ assignee_ids: [...currentIds, v] });
                    }
                 }}>
-                  <SelectTrigger className="w-full"><SelectValue placeholder="Adicionar..." /></SelectTrigger>
+                  <SelectTrigger className="w-full premium-input"><SelectValue placeholder="Adicionar..." /></SelectTrigger>
                   <SelectContent>
                      {team.filter(m => !(cardData.assignee_ids || []).includes(m.id)).map(m => (
                        <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
@@ -292,13 +301,17 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Data de Entrega</label>
-              <Input disabled={isClient} type="date" className="w-full" value={cardData.due_date || ''} onChange={e => updateCardLocal({ due_date: e.target.value || null })} />
+              <label className="text-xs font-semibold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <Calendar className="h-3 w-3" /> Data de Entrega
+              </label>
+              <Input disabled={isClient} type="date" className="w-full premium-input" value={cardData.due_date ? cardData.due_date.substring(0, 10) : ''} onChange={e => updateCardLocal({ due_date: e.target.value || null })} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-muted-foreground uppercase px-1">Descrição</label>
+            <label className="text-xs font-semibold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+              <AlignLeft className="h-3 w-3" /> Descrição
+            </label>
             {isEditingDescription && !isClient ? (
               <BalanceTextarea
                 autoFocus
@@ -326,8 +339,10 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
           <Separator />
 
           {/* Checklist */}
-          <div className="space-y-3">
-            <h4 className="font-bold flex items-center gap-2">Checklist</h4>
+          <div className="space-y-3 pt-2">
+            <h4 className="font-bold flex items-center gap-2 underline decoration-primary/30 underline-offset-4">
+              <CheckSquare className="h-4 w-4 text-primary" /> Checklist
+            </h4>
             <div className="space-y-1">
               {checklist.map(item => (
                 <div key={item.id} className="flex items-center gap-3 group px-2 py-1.5 rounded-md hover:bg-muted/50 transition-colors">

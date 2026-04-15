@@ -204,3 +204,30 @@
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(179,155,111,0.5);
 }
+
+/* ════════════════════════════════════════════════
+   Input & Date Picker Enhancements
+════════════════════════════════════════════════ */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1);
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.2s ease-in-out;
+  padding: 2px;
+  border-radius: 4px;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.1);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+input, textarea, select {
+  @apply transition-all duration-200 focus:shadow-[0_0_0_2px_rgba(251,191,36,0.1)];
+}
+
+.premium-input {
+  @apply bg-background/50 border-border/50 focus:border-primary/50 focus:bg-background transition-all duration-300;
+}
+

@@ -45,6 +45,7 @@ export interface Task {
   checklist: ChecklistItem[] | null;
   created_at: string | null;
   completed_at?: string | null;
+  started_at?: string | null;
   assignees?: Profile[];
   project?: Project;
   column?: KanbanColumn;

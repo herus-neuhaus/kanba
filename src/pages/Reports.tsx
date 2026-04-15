@@ -167,7 +167,7 @@ export default function Reports() {
                   !dateRange && "text-muted-foreground"
                 )}
               >
-                <CalendarIcon className="mr-2 h-4 w-4 text-primary" />
+                <CalendarIcon className="mr-2 h-4 w-4 text-white" />
                 {dateRange?.from ? (
                   dateRange.to ? (
                     <>

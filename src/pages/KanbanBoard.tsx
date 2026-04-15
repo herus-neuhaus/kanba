@@ -75,6 +75,11 @@ export default function KanbanBoard() {
     const destCol = columns.find(c => c.id === newColumnId);
     const updates: any = { id: taskId, column_id: newColumnId };
 
+    // Set started_at if moving out of first column for the first time
+    if (task.column_id === firstColId && newColumnId !== firstColId && !task.started_at) {
+      updates.started_at = new Date().toISOString();
+    }
+
     // Update completed_at based on is_done flag
     if (destCol?.is_done) {
       updates.completed_at = new Date().toISOString();

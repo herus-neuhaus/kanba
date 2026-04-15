@@ -3,7 +3,10 @@ import { Link } from 'react-router-dom';
 import {
   MessageSquare, Users, BookOpen, CheckCircle2, X,
   TrendingUp, Clock, ShieldCheck, ArrowRight, Zap, ChevronDown,
+  Star, ShieldAlert, MessageCircle, HelpCircle, DollarSign,
 } from 'lucide-react';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 /* ═══════════════════════════════════════════════
    DESIGN TOKENS
@@ -27,9 +30,10 @@ const C = {
   borderSubtle: 'rgba(148, 163, 184, 0.12)',
   borderCard: 'rgba(148, 163, 184, 0.08)',
   // Glows updated to Amber
-  glowHero: 'radial-gradient(ellipse 900px 600px at 50% 50%, rgba(251,191,36,0.08) 0%, rgba(15,23,42,0.0) 70%)',
-  glowBA: 'radial-gradient(ellipse 1200px 400px at 50% 60%, rgba(251,191,36,0.06) 0%, transparent 70%)',
-  glowFooter: 'radial-gradient(ellipse 800px 500px at 50% 40%, rgba(251,191,36,0.12) 0%, transparent 65%)',
+  glowHero: 'radial-gradient(ellipse 900px 600px at 50% 50%, rgba(251,191,36,0.12) 0%, rgba(15,23,42,0.0) 75%)',
+  glowBA: 'radial-gradient(ellipse 1200px 400px at 50% 60%, rgba(251,191,36,0.08) 0%, transparent 75%)',
+  glowFooter: 'radial-gradient(ellipse 800px 500px at 50% 40%, rgba(251,191,36,0.15) 0%, transparent 70%)',
+  glowCard: '0 0 40px rgba(251,191,36,0.1)',
 };
 
 /* ═══════════════════════════════════════════════
@@ -314,29 +318,31 @@ export default function Landing() {
           {/* MASSIVE H1 */}
           <h1 style={{
             fontFamily: "'Inter',sans-serif",
-            fontWeight: 700,
-            fontSize: 'clamp(3rem, 8vw, 7rem)',
-            lineHeight: 1.02,
+            fontWeight: 800,
+            fontSize: 'clamp(2.5rem, 6vw, 5rem)',
+            lineHeight: 1.1,
             color: C.palladian,
-            margin: '0 0 30px',
-            letterSpacing: '-0.02em',
+            margin: '0 0 24px',
+            letterSpacing: '-0.03em',
           }}>
-            O caos nas suas<br />
+            Pare de ser o <span style={{ color: C.gold }}>"Gerente de Cobrança"</span> do seu time.<br />
             <span style={{ background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', filter: 'drop-shadow(0 0 30px rgba(163,81,57,0.4))' }}>
-              tarefas está custando
+              Deixe o Kanba fazer o trabalho sujo.
             </span>
-            <br />clientes.
           </h1>
 
           {/* Sub-headline — bigger */}
-          <p style={{ fontSize: 'clamp(1.05rem, 2vw, 1.3rem)', color: C.oatmeal, lineHeight: 1.7, margin: '0 auto 44px', maxWidth: 640, fontWeight: 300 }}>
-            Retome o controle da sua agência com um sistema Kanban que organiza prazos e avisa os responsáveis automaticamente no WhatsApp.
+          <p style={{ fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', color: C.oatmeal, lineHeight: 1.6, margin: '0 auto 40px', maxWidth: 800, fontWeight: 300 }}>
+            O único sistema de gestão que usa IA e WhatsApp para cobrar prazos e eliminar o caos na sua agência.
           </p>
 
           {/* CTA block */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-            <CtaButton size="lg" />
-            <span style={{ fontSize: '0.82rem', color: C.oatmealDim }}>Sem necessidade de cartão de crédito · Configure em 5 minutos.</span>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+            <CtaButton label="7 Dias Grátis - Sem Cartão" size="lg" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Badge variant="outline" style={{ borderColor: C.gold, color: C.gold, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Sem Cartão</Badge>
+              <span style={{ fontSize: '0.85rem', color: C.oatmealDim }}>Acesso instantâneo a todas as funções PRO.</span>
+            </div>
           </div>
 
           {/* Trust row */}
@@ -540,42 +546,180 @@ export default function Landing() {
             />
           </div>
 
-          {/* BENTO — row 2: 5+4+3 */}
-          <div style={{ display: 'grid', gridTemplateColumns: '5fr 4fr 3fr', gap: 18 }} className="bento-row">
+          {/* BENTO — row 2: 4+4+4 */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 18 }} className="bento-row">
             <BentoCard
               icon={<BookOpen size={26} color="#5B8FC9" />}
               iconBg="rgba(91,143,201,0.12)"
               tag="CONHECIMENTO"
-              title="Wiki Integrada"
-              body="Documente processos, briefings e ideias de campanhas direto na plataforma. Canvas livre para a equipe criar."
+              title="Wiki & Processos"
+              body="Documente briefings, senhas e playbooks direto no projeto. Equipe alinhada sempre."
               accent="#5B8FC9"
             />
             <BentoCard
               icon={<TrendingUp size={26} color="#9B7FD4" />}
               iconBg="rgba(155,127,212,0.12)"
-              tag="CONTROLE"
-              title="Visão Geral em Tempo Real"
-              body="Painel executivo com total de demandas, andamento e atrasadas — num relance."
+              tag="INTELIGÊNCIA"
+              title="Relatórios de Gargalo"
+              body="Saiba onde o fluxo trava. Gestão baseada em dados, não em palpites."
               accent="#9B7FD4"
+              extra={
+                <div style={{ marginTop: 20, display: 'flex', gap: 8 }}>
+                  {[45, 80, 25].map((val, i) => (
+                    <div key={i} style={{ flex: 1, height: 40, background: 'rgba(255,255,255,0.03)', borderRadius: 4, position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: `${val}%`, background: i === 1 ? '#E05A4C' : '#5BAA7E', opacity: 0.6 }} />
+                    </div>
+                  ))}
+                </div>
+              }
             />
-            {/* Alerts card — lighter bg to stand out */}
-            <div style={{
-              background: C.bgCardLight,
-              border: `1px solid ${C.borderSubtle}`,
-              borderRadius: '6px',
-              padding: '30px 24px',
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: `0 0 40px rgba(179,155,111,0.07)`,
-            }}>
-              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${C.oatmeal}, transparent)`, opacity: 0.5 }} />
-              <div style={{ width: 52, height: 52, borderRadius: '8px', background: 'rgba(197,193,177,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(197,193,177,0.2)`, marginBottom: 14 }}>
-                <Clock size={28} color={C.palladian} />
+            <BentoCard
+              icon={<Clock size={26} color={C.palladian} />}
+              iconBg="rgba(255,255,255,0.05)"
+              tag="PRAZOS"
+              title="Alertas de Entrega"
+              body="O sistema destaca tarefas próximas do vencimento para evitar atrasos críticos."
+              accent={C.oatmeal}
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          PRICING SECTION — Responsive & Premium
+      ══════════════════════════════════════════ */}
+      <section style={{ padding: '80px 6% 120px', background: C.bg }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <Eyebrow>Investimento</Eyebrow>
+          <h2 style={{
+            fontFamily: "'Inter',sans-serif", fontWeight: 700,
+            fontSize: 'clamp(2rem, 4.5vw, 3.8rem)',
+            color: C.palladian, textAlign: 'center', margin: '0 0 60px',
+            lineHeight: 1.1
+          }}>
+            Escolha o plano ideal para<br />
+            <span style={{ color: C.oatmeal, fontWeight: 400 }}>escalar sua operação.</span>
+          </h2>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 24 }}>
+            {/* Starter */}
+            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none' }}>
+              <div style={{ height: 4, background: C.oatmealDim, width: '100%', borderRadius: '4px 4px 0 0' }} />
+              <CardHeader>
+                <CardTitle style={{ color: C.palladian }}>Starter</CardTitle>
+                <CardDescription>Para pequenas agências ou freelancers.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div style={{ marginBottom: 20 }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 97</span>
+                  <span style={{ color: C.oatmeal }}>/mês</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {['Até 5 usuários', 'Kanban Ilimitado', 'Suporte por Email', 'Relatórios Básicos'].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckCircle2 size={16} color={C.oatmealDim} />
+                      <span style={{ fontSize: '0.9rem', color: C.oatmeal }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/auth" style={{ width: '100%' }}>
+                  <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: `1px solid ${C.borderSubtle}`, background: 'transparent', color: C.palladian, fontWeight: 600, cursor: 'pointer' }}>
+                    Começar Trial
+                  </button>
+                </Link>
+              </CardFooter>
+            </Card>
+
+            {/* PRO */}
+            <Card style={{ background: C.bgDeep, borderColor: C.gold, position: 'relative', transform: 'scale(1.05)', zIndex: 10, boxShadow: '0 20px 50px rgba(0,0,0,0.5), 0 0 20px rgba(251,191,36,0.1)' }}>
+              <div style={{ height: 4, background: C.gradientCta, width: '100%', borderRadius: '4px 4px 0 0' }} />
+              <div style={{ position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)' }}>
+                <Badge style={{ background: C.gold, color: C.bg, fontWeight: 700 }}>MAIS POPULAR</Badge>
               </div>
-              <p style={{ margin: '0 0 6px', fontSize: '0.62rem', color: C.oatmeal, fontFamily: "'Inter',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>PRAZOS</p>
-              <h3 style={{ margin: '0 0 10px', fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: '1.15rem', color: C.palladian, lineHeight: 1.2 }}>Alertas de Entrega</h3>
-              <p style={{ margin: 0, fontSize: '0.87rem', color: C.oatmeal, lineHeight: 1.65, fontWeight: 300 }}>Sistema identifica tarefas atrasadas e destaca antes que o cliente precise cobrar.</p>
-            </div>
+              <CardHeader>
+                <CardTitle style={{ color: C.palladian, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  PRÓ <Star size={18} fill={C.gold} color={C.gold} />
+                </CardTitle>
+                <CardDescription style={{ color: C.oatmeal }}>Para agências em escala que buscam automação.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div style={{ marginBottom: 20 }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 247</span>
+                  <span style={{ color: C.oatmeal }}>/mês</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {['Usuários Ilimitados', 'Robô de WhatsApp Nativo', 'Wiki & Playbooks', 'Portal do Cliente', 'Relatórios Avançados'].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckCircle2 size={16} color={C.gold} />
+                      <span style={{ fontSize: '0.9rem', color: C.palladian, fontWeight: 500 }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/auth" style={{ width: '100%' }}>
+                  <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: 'none', background: C.gradientCta, color: C.bg, fontWeight: 700, cursor: 'pointer' }}>
+                    Escolher Plano PRÓ
+                  </button>
+                </Link>
+              </CardFooter>
+            </Card>
+
+            {/* Elite */}
+            <Card style={{ background: C.bgCard, borderColor: C.borderCard, borderTop: 'none' }}>
+              <div style={{ height: 4, background: '#1e293b', width: '100%', borderRadius: '4px 4px 0 0' }} />
+              <CardHeader>
+                <CardTitle style={{ color: C.palladian }}>Elite</CardTitle>
+                <CardDescription>Para operações complexas de alta demanda.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div style={{ marginBottom: 20 }}>
+                  <span style={{ fontSize: '2.5rem', fontWeight: 800, color: C.palladian }}>R$ 497</span>
+                  <span style={{ color: C.oatmeal }}>/mês</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {['Tudo do PRÓ', 'Suporte Prioritário 1-on-1', 'Treinamento de Equipe', 'Multitenancy Especial', 'Acesso Antecipado a IA'].map(f => (
+                    <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <CheckCircle2 size={16} color={C.palladian} />
+                      <span style={{ fontSize: '0.9rem', color: C.oatmeal }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+              <CardFooter>
+                <Link to="/auth" style={{ width: '100%' }}>
+                  <button style={{ width: '100%', padding: '12px', borderRadius: '4px', border: `1px solid ${C.borderSubtle}`, background: 'transparent', color: C.palladian, fontWeight: 600, cursor: 'pointer' }}>
+                    Assinar Elite
+                  </button>
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════
+          FAQ SECTION — Objection Breaking
+      ══════════════════════════════════════════ */}
+      <section style={{ padding: '60px 6% 100px', background: C.bgDeeper }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 700, color: C.palladian, marginBottom: 40 }}>Perguntas Frequentes</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {[
+              { q: 'Por que vocês não pedem cartão de crédito no trial?', a: 'Queremos remover toda a barreira. Você testa, aplica na sua agência e só paga se o sistema realmente resolver seu gargalo produtivo. Sem letras miúdas.' },
+              { q: 'O robô de WhatsApp funciona como?', a: 'O Kanba se conecta ao seu WhatsApp via API segura. Toda vez que uma tarefa muda de coluna ou está perto do prazo, o sistema envia uma mensagem personalizada para o responsável.' },
+              { q: 'Posso convidar meus prestadores externos?', a: 'Sim! Você pode convidar membros com permissões limitadas. Eles só veem o que você autorizar, mantendo a segurança dos outros projetos.' },
+              { q: 'E se eu precisar de ajuda para configurar?', a: 'Nosso suporte é 100% em português. No plano PRÓ e Elite, você tem acesso a consultores que ajudam a desenhar seu fluxo de trabalho.' }
+            ].map((faq, i) => (
+              <div key={i} style={{ background: C.bgCard, padding: '24px', borderRadius: '6px', border: `1px solid ${C.borderCard}` }}>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: C.gold, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <HelpCircle size={18} /> {faq.q}
+                </h3>
+                <p style={{ color: C.oatmeal, lineHeight: 1.6, fontSize: '0.95rem' }}>{faq.a}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>

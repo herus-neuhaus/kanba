@@ -2,10 +2,17 @@ import React from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Check, Crown, Zap, Rocket } from 'lucide-react';
+import { AlertCircle, Check, Crown, Zap, Rocket, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const SubscriptionPending = () => {
-  const { agency, signOut } = useAuth();
+  const { agency, signOut, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   const plans = [
     {
@@ -96,23 +103,30 @@ const SubscriptionPending = () => {
                 </ul>
               </CardContent>
               <CardFooter>
-                <Button 
-                  asChild={!isCurrent || !isActive}
-                  disabled={isCurrent && isActive}
-                  className={`w-full ${
-                    plan.highlight 
-                      ? 'bg-amber-500 hover:bg-amber-600 text-black' 
-                      : 'bg-slate-800 hover:bg-slate-700 text-white'
-                  }`}
-                >
-                  {isCurrent && isActive ? (
-                    <span>Assinatura Ativa</span>
-                  ) : (
-                    <a href={`${plan.link}?external_id=${agency?.id}`}>
-                      Assinar Agora
-                    </a>
-                  )}
-                </Button>
+                {!agency?.id ? (
+                  <Button disabled className="w-full bg-slate-800 text-slate-500">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Carregando...
+                  </Button>
+                ) : (
+                  <Button 
+                    asChild={!isCurrent || !isActive}
+                    disabled={isCurrent && isActive}
+                    className={`w-full ${
+                      plan.highlight 
+                        ? 'bg-amber-500 hover:bg-amber-600 text-black' 
+                        : 'bg-slate-800 hover:bg-slate-700 text-white'
+                    }`}
+                  >
+                    {isCurrent && isActive ? (
+                      <span>Assinatura Ativa</span>
+                    ) : (
+                      <a href={`${plan.link}?external_id=${agency.id}`}>
+                        Assinar Agora
+                      </a>
+                    )}
+                  </Button>
+                )}
               </CardFooter>
             </Card>
           );
@@ -123,7 +137,7 @@ const SubscriptionPending = () => {
         <p className="text-slate-500 text-sm mb-4">
           Já realizou o pagamento? O processamento pode levar alguns minutos.
         </p>
-        <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={signOut}>
+        <Button variant="ghost" className="text-slate-400 hover:text-white" onClick={handleSignOut}>
           Sair da Conta
         </Button>
       </div>

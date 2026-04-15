@@ -12,7 +12,7 @@ import { DEMAND_TYPES } from '@/types';
 import { logAndNotify } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { generateTaskLink } from '@/lib/urls';
-import { X } from 'lucide-react';
+import { X, PlusCircle, Type, AlignLeft, UserCircle, Calendar } from 'lucide-react';
 import type { Profile, KanbanColumn } from '@/types';
 
 interface Props {
@@ -67,7 +67,7 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
         priority,
         project_id: projectId,
         assignee_ids: assigneeIds,
-        due_date: dueDate || undefined,
+        due_date: dueDate ? new Date(dueDate + 'T23:59:59').toISOString() : undefined,
         labels: [demandType],
       });
 
@@ -77,7 +77,8 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
           const assignee = team.find(m => m.id === aId);
           const project = projects.find(p => p.id === projectId);
           if (assignee?.phone) {
-            const dateStr = dueDate ? format(new Date(dueDate), 'dd/MM/yyyy') : 'Sem data';
+            const [year, month, day] = dueDate.split('-').map(String);
+            const dateStr = `${day}/${month}/${year}`;
             const link = generateTaskLink(projectId!, newTask.id);
             const msg = `📋 *Nova Demanda Recebida*\n\nOlá ${assignee.full_name}!\nVocê foi atribuído a uma demanda: *${title}*\nProjeto: *${project?.name || 'Agência'}*\nPrazo: *${dateStr}*\n\n👉 *Acesse direto a tarefa aqui:*\n🔗 ${link}`;
             logAndNotify(newTask.id, 'creation', assignee.phone, msg);
@@ -96,14 +97,32 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
   return (
     <Dialog open={open} onOpenChange={v => !v && onClose()}>
       <DialogContent>
-        <DialogHeader><DialogTitle>Nova Demanda</DialogTitle></DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input placeholder="Título da demanda" value={title} onChange={e => setTitle(e.target.value)} required />
+        <DialogHeader>
+          <DialogTitle className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center border border-primary/20">
+              <PlusCircle className="h-5 w-5 text-primary" />
+            </div>
+            Nova Demanda
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
+              <Type className="h-3 w-3" /> Título
+            </label>
+            <Input 
+              placeholder="Ex: Criativo para Campanha de Verão" 
+              value={title} 
+              onChange={e => setTitle(e.target.value)} 
+              required 
+              className="premium-input"
+            />
+          </div>
           
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase px-1 text-muted-foreground">Tipo de Demanda</label>
             <Select value={demandType} onValueChange={setDemandType}>
-              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full premium-input"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {currentDemandTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
               </SelectContent>
@@ -113,7 +132,7 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
           <div className="space-y-1.5">
             <label className="text-xs font-semibold uppercase px-1 text-muted-foreground">Prioridade</label>
             <Select value={priority} onValueChange={(v: any) => setPriority(v)}>
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full premium-input">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -124,22 +143,38 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
             </Select>
           </div>
 
-          <Textarea placeholder="Descrição (opcional)" value={description} onChange={e => setDescription(e.target.value)} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
+              <AlignLeft className="h-3 w-3" /> Descrição
+            </label>
+            <Textarea 
+              placeholder="Detalhes sobre a demanda..." 
+              value={description} 
+              onChange={e => setDescription(e.target.value)} 
+              className="premium-input min-h-[100px] resize-none"
+            />
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            <Select value={columnId} onValueChange={setColumnId}>
-              <SelectTrigger><SelectValue placeholder="Coluna" /></SelectTrigger>
-              <SelectContent>
-                {columns.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase px-1 text-muted-foreground">Etapa</label>
+              <Select value={columnId} onValueChange={setColumnId}>
+                <SelectTrigger className="premium-input"><SelectValue placeholder="Coluna" /></SelectTrigger>
+                <SelectContent>
+                  {columns.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
+                <UserCircle className="h-3 w-3" /> Responsável
+              </label>
               <Select onValueChange={(val) => {
                 if (!assigneeIds.includes(val)) {
                   setAssigneeIds(prev => [...prev, val]);
                 }
               }} value="">
-                <SelectTrigger><SelectValue placeholder="Atribuir Responsável..." /></SelectTrigger>
+                <SelectTrigger className="premium-input"><SelectValue placeholder="Atribuir..." /></SelectTrigger>
                 <SelectContent>
                   {team.filter(m => !assigneeIds.includes(m.id)).map(m => (
                     <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
@@ -166,7 +201,17 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
             </div>
           )}
 
-          <Input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+          <div className="space-y-1.5">
+            <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
+              <Calendar className="h-3 w-3" /> Prazo de Entrega
+            </label>
+            <Input 
+              type="date" 
+              value={dueDate} 
+              onChange={e => setDueDate(e.target.value)} 
+              className="premium-input"
+            />
+          </div>
           <Button type="submit" className="w-full" disabled={createTask.isPending}>Criar Demanda</Button>
         </form>
       </DialogContent>

@@ -204,7 +204,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const createAgency = async (name: string): Promise<Agency> => {
     if (!user) throw new Error('Not authenticated');
-    const { data, error } = await supabase.from('agencies').insert({ name, owner_user_id: user.id }).select().single();
+    const { data, error } = await supabase.from('agencies').insert({ 
+      name, 
+      owner_user_id: user.id,
+      plan_type: 'pro',
+      subscription_status: 'trialing'
+    }).select().single();
     if (error) throw error;
     const agencyData = data as Agency;
     await supabase.from('profiles').update({ 

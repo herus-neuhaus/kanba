@@ -107,7 +107,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
     (agency.subscription_status === 'past_due' || agency.subscription_status === 'canceled' || 
     (agency.next_billing_date && new Date(agency.next_billing_date) < new Date()));
 
-  if (isInvalid) {
+  if (isInvalid && window.location.pathname !== '/assinatura-pendente') {
     return <Navigate to="/assinatura-pendente" replace />;
   }
 
@@ -223,7 +223,16 @@ function AppRoutes() {
       <Route path="/settings"   element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Settings /></Suspense></ProtectedRoute>} />
       <Route path="/crm"        element={<ProtectedRoute><Suspense fallback={<PageLoader />}><CRM /></Suspense></ProtectedRoute>} />
       <Route path="/reports"    element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Reports /></Suspense></ProtectedRoute>} />
-      <Route path="/assinatura-pendente" element={<Suspense fallback={<PageLoader />}><SubscriptionPending /></Suspense>} />
+      <Route 
+        path="/assinatura-pendente" 
+        element={
+          <ProtectedRoute>
+            <Suspense fallback={<PageLoader />}>
+              <SubscriptionPending />
+            </Suspense>
+          </ProtectedRoute>
+        } 
+      />
 
       {/* ── Rotas de Cliente ── */}
       <Route path="/cliente/dashboard"                        element={<ClientRoute><Suspense fallback={<PageLoader />}><ClientDashboard /></Suspense></ClientRoute>} />

@@ -63,7 +63,7 @@ export function ProjectCalendar({ projectId }: ProjectCalendarProps) {
   const tasksByDay = useMemo(() => {
     const map: Record<string, typeof tasksWithDueDate> = {};
     for (const task of tasksWithDueDate) {
-      const key = task.due_date.slice(0, 10); // "yyyy-MM-dd"
+      const key = format(new Date(task.due_date), 'yyyy-MM-dd'); // "yyyy-MM-dd" local
       if (!map[key]) map[key] = [];
       map[key].push(task);
     }

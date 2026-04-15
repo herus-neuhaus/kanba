@@ -16,35 +16,47 @@ export type Database = {
     Tables: {
       agencies: {
         Row: {
+          cakto_id: string | null
           created_at: string | null
           demand_types: string[] | null
           evolution_instance_name: string | null
           id: string
+          last_payment_at: string | null
           name: string
+          next_billing_date: string | null
           owner_user_id: string | null
-          plan: string | null
+          plan_type: string | null
+          subscription_status: string | null
           whatsapp_connected: boolean | null
           whatsapp_number: string | null
         }
         Insert: {
+          cakto_id?: string | null
           created_at?: string | null
           demand_types?: string[] | null
           evolution_instance_name?: string | null
           id?: string
+          last_payment_at?: string | null
           name: string
+          next_billing_date?: string | null
           owner_user_id?: string | null
-          plan?: string | null
+          plan_type?: string | null
+          subscription_status?: string | null
           whatsapp_connected?: boolean | null
           whatsapp_number?: string | null
         }
         Update: {
+          cakto_id?: string | null
           created_at?: string | null
           demand_types?: string[] | null
           evolution_instance_name?: string | null
           id?: string
+          last_payment_at?: string | null
           name?: string
+          next_billing_date?: string | null
           owner_user_id?: string | null
-          plan?: string | null
+          plan_type?: string | null
+          subscription_status?: string | null
           whatsapp_connected?: boolean | null
           whatsapp_number?: string | null
         }
@@ -369,6 +381,7 @@ export type Database = {
           last_notified_at: string | null
           priority: string | null
           project_id: string | null
+          started_at: string | null
           title: string
         }
         Insert: {
@@ -385,6 +398,7 @@ export type Database = {
           last_notified_at?: string | null
           priority?: string | null
           project_id?: string | null
+          started_at?: string | null
           title: string
         }
         Update: {
@@ -401,6 +415,7 @@ export type Database = {
           last_notified_at?: string | null
           priority?: string | null
           project_id?: string | null
+          started_at?: string | null
           title?: string
         }
         Relationships: [
@@ -438,6 +453,10 @@ export type Database = {
       get_user_agency_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       is_agency_admin_of: { Args: { profile_id: string }; Returns: boolean }
+      is_subscription_active: {
+        Args: { p_agency_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
@@ -564,9 +583,3 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
-export const Constants = {
-  public: {
-    Enums: {},
-  },
-} as const
