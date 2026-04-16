@@ -27,6 +27,7 @@ export type Database = {
           owner_user_id: string | null
           plan_type: string | null
           subscription_status: string | null
+          updated_at: string | null
           whatsapp_connected: boolean | null
           whatsapp_number: string | null
         }
@@ -42,6 +43,7 @@ export type Database = {
           owner_user_id?: string | null
           plan_type?: string | null
           subscription_status?: string | null
+          updated_at?: string | null
           whatsapp_connected?: boolean | null
           whatsapp_number?: string | null
         }
@@ -57,6 +59,7 @@ export type Database = {
           owner_user_id?: string | null
           plan_type?: string | null
           subscription_status?: string | null
+          updated_at?: string | null
           whatsapp_connected?: boolean | null
           whatsapp_number?: string | null
         }
@@ -97,6 +100,134 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_clients: {
+        Row: {
+          agency_id: string
+          contact_info: Json | null
+          created_at: string | null
+          id: string
+          name: string
+          status: string
+        }
+        Insert: {
+          agency_id: string
+          contact_info?: Json | null
+          created_at?: string | null
+          id?: string
+          name: string
+          status?: string
+        }
+        Update: {
+          agency_id?: string
+          contact_info?: Json | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_clients_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_deals: {
+        Row: {
+          agency_id: string
+          client_id: string
+          created_at: string | null
+          expected_close_date: string | null
+          id: string
+          notes: string | null
+          pipeline_id: string
+          stage: string
+          title: string
+          value: number
+        }
+        Insert: {
+          agency_id: string
+          client_id: string
+          created_at?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          pipeline_id: string
+          stage?: string
+          title: string
+          value?: number
+        }
+        Update: {
+          agency_id?: string
+          client_id?: string
+          created_at?: string | null
+          expected_close_date?: string | null
+          id?: string
+          notes?: string | null
+          pipeline_id?: string
+          stage?: string
+          title?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_deals_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "crm_clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_pipeline_id_fkey"
+            columns: ["pipeline_id"]
+            isOneToOne: false
+            referencedRelation: "crm_pipelines"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      crm_pipelines: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_pipelines_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
             referencedColumns: ["id"]
           },
         ]
@@ -387,7 +518,7 @@ export type Database = {
           progress?: number | null
         }
         Update: {
-          agency_id: string
+          agency_id?: string
           created_at?: string | null
           description?: string | null
           id?: string
@@ -440,7 +571,7 @@ export type Database = {
           title: string
         }
         Update: {
-          agency_id: string
+          agency_id?: string
           assignee_ids?: string[] | null
           checklist?: Json | null
           column_id?: string | null
