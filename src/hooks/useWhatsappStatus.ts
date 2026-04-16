@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useWhatsappStatus(agencyId: string | undefined, agencyName?: string) {
+export function useWhatsappStatus(agencyId: string | undefined) {
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(true);
   const [instanceName, setInstanceName] = useState<string | null>(null);
@@ -21,19 +21,8 @@ export function useWhatsappStatus(agencyId: string | undefined, agencyName?: str
         setInstanceName(localData?.evolution_instance_name || null);
         setIsConnected(!!localData?.whatsapp_connected);
 
-        // Se houver uma agencyName disponível, podemos verificar com a API em tempo real
-        if (agencyName && localData?.evolution_instance_name) {
-          const { data: syncData, error } = await supabase.functions.invoke('check-whatsapp-status', {
-            body: { agencyId, agencyName }
-          });
-          
-          if (!error && syncData) {
-             setIsConnected(syncData.isConnected);
-             if (syncData.instanceName) {
-               setInstanceName(syncData.instanceName);
-             }
-          }
-        }
+        // Real-time API check removed as we rely on database status and webhooks
+
       } catch (err) {
         console.error('Error checking whatsapp status:', err);
       } finally {
@@ -74,7 +63,7 @@ export function useWhatsappStatus(agencyId: string | undefined, agencyName?: str
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [agencyId, agencyName]);
+  }, [agencyId]);
 
   return { isConnected, loading, instanceName };
 }

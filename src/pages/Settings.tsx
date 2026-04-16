@@ -40,7 +40,7 @@ export default function Settings() {
   const { toast } = useToast();
   
   const [loading, setLoading] = useState(false);
-  const { isConnected, loading: waLoading, instanceName } = useWhatsappStatus(agency?.id, agency?.name);
+  const { isConnected, loading: waLoading, instanceName } = useWhatsappStatus(agency?.id);
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [waInstanceLoading, setWaInstanceLoading] = useState(false);
   const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
@@ -182,7 +182,7 @@ export default function Settings() {
     setQrCode(null);
     try {
       const { data, error } = await supabase.functions.invoke('create-whatsapp-instance', {
-        body: { agencyId: agency.id, agencyName: agency.name }
+        body: { agencyId: agency.id }
       });
       if (error) throw error;
       if (data?.qrcode) {
@@ -207,7 +207,7 @@ export default function Settings() {
       // For now, we simulate disconnect by updating db directly
       // In a real scenario we need to delete the instance remotely
       const { error } = await supabase.functions.invoke('disconnect-whatsapp-instance', {
-         body: { agencyId: agency.id, agencyName: agency.name }
+         body: { agencyId: agency.id }
       });
       if (error) throw error;
 

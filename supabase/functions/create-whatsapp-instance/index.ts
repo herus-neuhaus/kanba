@@ -14,11 +14,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
   try {
-    const { agencyId, agencyName } = await req.json()
+    const { agencyId } = await req.json()
+    
+    if (!agencyId) {
+      throw new Error("agencyId required")
+    }
 
-    // Formata o nome para remover espaços e caracteres especiais
-    const safeAgencyName = agencyName ? agencyName.replace(/[^a-zA-Z0-9]/g, '') : 'Agency'
-    const instanceName = `KanbanFlow_${safeAgencyName}`
+    const instanceName = agencyId;
 
     // Cria instância na Evolution
     const evoRes = await fetch(`${EVOLUTION_BASE_URL}/instance/create`, {

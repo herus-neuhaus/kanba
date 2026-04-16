@@ -14,14 +14,13 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders })
 
   try {
-    const { agencyId, agencyName } = await req.json()
+    const { agencyId } = await req.json()
     
     if (!agencyId) {
       throw new Error("agencyId required")
     }
 
-    const safeAgencyName = agencyName ? agencyName.replace(/[^a-zA-Z0-9]/g, '') : 'Agency'
-    const instanceName = `KanbanFlow_${safeAgencyName}`
+    const instanceName = agencyId;
 
     try {
       await fetch(`${EVOLUTION_BASE_URL}/instance/logout/${instanceName}`, {
