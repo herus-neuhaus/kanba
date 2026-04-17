@@ -26,11 +26,13 @@ import {
   LogOut,
   RefreshCw,
   CheckCircle2,
-  X
+  X,
+  Bot
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { EnterpriseLeadModal } from '@/components/EnterpriseLeadModal';
+import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
@@ -46,6 +48,10 @@ export default function Settings() {
   const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
 
   const [isDemandLoading, setIsDemandLoading] = useState(false);
+  const [isAiActive, setIsAiActive] = useState(false);
+  const [isGeneratingAi, setIsGeneratingAi] = useState(false);
+
+  const isManagerOrOwner = profile?.role === 'owner' || profile?.role === 'manager';
 
   // Profile Form
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -68,6 +74,7 @@ export default function Settings() {
     if (agency) {
       setAgencyName(agency.name || '');
       setDemandTypes(agency.demand_types || ['Post', 'Criativo', 'Vídeo', 'Copy', 'Landing Page']);
+      setIsAiActive((agency as any).ai_active || false);
     }
   }, [agency]);
 
@@ -224,6 +231,35 @@ export default function Settings() {
     window.location.href = `${link}?external_id=${agency.id}`;
   };
 
+  const toggleAiActive = async (checked: boolean) => {
+    if (!agency) return;
+    setIsAiActive(checked);
+    try {
+      const { error } = await supabase
+        .from('agencies')
+        .update({ ai_active: checked } as any)
+        .eq('id', agency.id);
+      if (error) throw error;
+      toast({ title: "Configuração KAN atualizada", description: checked ? "KAN agora está monitorando sua agência." : "Monitoramento KAN pausado." });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+      setIsAiActive(!checked);
+    }
+  };
+
+  const generateAIReport = async () => {
+    setIsGeneratingAi(true);
+    try {
+      const { error } = await supabase.functions.invoke('kanba-ai-monitor', { method: 'POST' });
+      if (error) throw error;
+      toast({ title: "KAN Ativado", description: "O KAN está analisando os dados e enviará o relatório no seu WhatsApp em instantes!" });
+    } catch (err: any) {
+      toast({ title: "Erro na geração", description: err.message, variant: "destructive" });
+    } finally {
+      setIsGeneratingAi(false);
+    }
+  };
+
   return (
     <div className="max-w-5xl mx-auto space-y-8 animate-fade-in pb-20 px-4 sm:px-0">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
@@ -243,18 +279,24 @@ export default function Settings() {
             <TabsTrigger value="profile" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter">
               <User className="h-4 w-4" /> Perfil
             </TabsTrigger>
-            <TabsTrigger value="agency" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter">
-              <Building2 className="h-4 w-4" /> Agência
-            </TabsTrigger>
+            {isManagerOrOwner && (
+              <TabsTrigger value="agency" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter">
+                <Building2 className="h-4 w-4" /> Agência
+              </TabsTrigger>
+            )}
             <TabsTrigger value="demands" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
               <Tag className="h-4 w-4" /> Demandas
             </TabsTrigger>
-            <TabsTrigger value="whatsapp" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-              <MessageCircle className="h-4 w-4" /> WhatsApp
-            </TabsTrigger>
-            <TabsTrigger value="plans" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
-              <CreditCard className="h-4 w-4" /> Planos
-            </TabsTrigger>
+            {isManagerOrOwner && (
+              <TabsTrigger value="whatsapp" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
+                <MessageCircle className="h-4 w-4" /> WhatsApp
+              </TabsTrigger>
+            )}
+            {isManagerOrOwner && (
+              <TabsTrigger value="plans" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
+                <CreditCard className="h-4 w-4" /> Planos
+              </TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -433,9 +475,59 @@ export default function Settings() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* KANBA AI MONITOR CARD */}
+            <Card className="md:col-start-2 md:col-span-2 border-none shadow-xl ring-1 ring-border/50 bg-gradient-to-br from-primary/5 to-transparent overflow-hidden">
+              <CardHeader className="bg-primary/5 pb-4 border-b border-primary/10">
+                <div className="flex items-center gap-3">
+                  <div className="bg-primary/20 p-2 rounded-xl border border-primary/30">
+                    <Bot className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-xl font-black">Inteligência Operacional (KAN)</CardTitle>
+                    <CardDescription className="text-xs">Monitoramento Inteligente e Resumos Estratégicos</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8 space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1 max-w-[70%]">
+                    <p className="font-bold text-sm tracking-tight">Ativar Monitor KAN</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      O KAN monitora sua equipe e envia resumos estratégicos via WhatsApp às 07:30 e 19:00.
+                    </p>
+                  </div>
+                  <Switch 
+                    checked={isAiActive} 
+                    onCheckedChange={toggleAiActive} 
+                    disabled={profile?.role !== 'owner'}
+                  />
+                </div>
+                
+                <div className="pt-4 border-t border-border/50">
+                  <Button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      generateAIReport();
+                    }}
+                    disabled={isGeneratingAi || !isAiActive}
+                    className="w-full sm:w-auto h-12 px-8 gap-2 font-black uppercase text-[11px] tracking-widest shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground"
+                    type="button"
+                  >
+                    {isGeneratingAi ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+                    Gerar Relatório Agora
+                  </Button>
+                  {!isAiActive && (
+                    <p className="text-[10px] text-muted-foreground mt-2 italic text-center sm:text-left">
+                       A Inteligência Operacional precisa estar ativa.
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
           </div>
         </TabsContent>
-
         {/* DEMANDS TAB */}
         <TabsContent value="demands" className="animate-in fade-in-50 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
