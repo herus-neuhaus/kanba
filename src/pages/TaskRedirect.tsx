@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { LoadingSplash } from '@/components/layout/LoadingSplash';
@@ -29,13 +29,9 @@ export default function TaskRedirect() {
         }
 
         // Busca a tarefa para identificar o projeto
-        const { data: task, error } = await supabase
-          .from('tasks')
-          .select('id, project_id')
-          .eq('id', taskId)
-          .maybeSingle();
+        const task = await apiClient<{ id: string; project_id: string }>(`/tasks/${taskId}`);
 
-        if (error || !task) {
+        if (!task) {
           toast({
             title: 'Tarefa não localizada',
             description: 'A demanda pode ter sido excluída ou você não tem acesso.',

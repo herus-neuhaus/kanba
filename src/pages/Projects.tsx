@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { toast as sonnerToast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCan } from '@/hooks/useCan';
+import { useWorkspace } from '@/hooks/useWorkspace';
 
 import { PLANS, type PlanType } from '@/config/plans';
 import {
@@ -29,6 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { Project } from '@/types';
 
 export default function Projects() {
@@ -39,7 +42,12 @@ export default function Projects() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   
   const { agency } = useAuth();
+  const { activeWorkspaceId, workspaces } = useWorkspace();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [selectedSpaceId, setSelectedSpaceId] = useState<string>('');
+  
+  const canDeleteProjects = useCan('projects_delete');
+  const canCreateProjects = useCan('projects_create');
   
   const currentPlanType = (agency?.plan_type?.toLowerCase() || 'trial') as PlanType;
   const planConfig = PLANS[currentPlanType] || PLANS.trial;
@@ -55,7 +63,12 @@ export default function Projects() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createProject.mutateAsync({ name, description });
+      const spaceToUse = activeWorkspaceId || selectedSpaceId;
+      if (!spaceToUse) {
+        toast({ title: 'Atenção', description: 'Por favor, selecione um Workspace.', variant: 'destructive' });
+        return;
+      }
+      await createProject.mutateAsync({ name, description, space_id: spaceToUse });
       setOpen(false);
       setName('');
       setDescription('');
@@ -139,12 +152,14 @@ export default function Projects() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Meus Projetos</h1>
-          <p className="text-muted-foreground">Gerencie seus projetos e as demandas de cada um ({projects.length}/{limit === Infinity ? '∞' : limit}).</p>
+          <h1 className="text-3xl font-black tracking-tight uppercase">Meus Projetos</h1>
+          <p className="text-muted-foreground font-medium italic">Gerencie seus projetos e as demandas de cada um ({projects.length}/{limit === Infinity ? '∞' : limit}).</p>
         </div>
-        <Button size="lg" className="shadow-sm" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>
-          <Plus className="h-5 w-5 mr-2" /> Novo Projeto
-        </Button>
+        {canCreateProjects && (
+          <Button size="lg" className="shadow-sm" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>
+            <Plus className="h-5 w-5 mr-2" /> Novo Projeto
+          </Button>
+        )}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent>
             <DialogHeader><DialogTitle>Cadastrar Novo Projeto</DialogTitle></DialogHeader>
@@ -153,6 +168,22 @@ export default function Projects() {
                 <label className="text-sm font-medium">Nome do Projeto</label>
                 <Input placeholder="Ex: Projeto E-commerce Beta" value={name} onChange={e => setName(e.target.value)} required />
               </div>
+              {!activeWorkspaceId && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Workspace <span className="text-destructive">*</span></label>
+                  <select 
+                    className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={selectedSpaceId}
+                    onChange={(e) => setSelectedSpaceId(e.target.value)}
+                    required
+                  >
+                    <option value="" disabled>Selecione um Workspace...</option>
+                    {workspaces.map(w => (
+                      <option key={w.id} value={w.id}>{w.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Descrição / Observações</label>
                 <Textarea placeholder="Descreva brevemente o perfil ou demandas do projeto..." value={description} onChange={e => setDescription(e.target.value)} rows={4} />
@@ -166,16 +197,16 @@ export default function Projects() {
       </div>
 
       {projects.length === 0 ? (
-        <Card className="border-dashed">
-          <CardContent className="flex flex-col items-center justify-center py-20 text-center">
-            <div className="bg-muted p-4 rounded-full mb-4">
-              <FolderKanban className="h-10 w-10 text-muted-foreground" />
-            </div>
-            <h2 className="text-xl font-semibold mb-2">Nenhum projeto encontrado</h2>
-            <p className="text-muted-foreground max-w-xs mb-6">Comece cadastrando seu primeiro projeto para organizar suas tarefas.</p>
-            <Button variant="outline" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>Cadastrar projeto agora</Button>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={FolderKanban}
+          title="Nenhum projeto encontrado"
+          description="Comece criando seu primeiro projeto para organizar suas demandas e da sua equipe de forma inteligente."
+          action={
+            <Button size="lg" className="shadow-lg shadow-primary/20" onClick={() => isOverLimit ? setUpgradeOpen(true) : setOpen(true)}>
+              <Plus className="mr-2 h-5 w-5" /> Criar Meu Primeiro Projeto
+            </Button>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map(p => (
@@ -195,9 +226,11 @@ export default function Projects() {
                       <DropdownMenuItem onClick={() => openEditDialog(p)} className="cursor-pointer">
                         <Edit2 className="h-4 w-4 mr-2" /> Editar
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => setDeleteId(p.id)} className="text-destructive focus:text-destructive cursor-pointer">
-                        <Trash2 className="h-4 w-4 mr-2" /> Deletar
-                      </DropdownMenuItem>
+                      {canDeleteProjects && (
+                        <DropdownMenuItem onClick={() => setDeleteId(p.id)} className="text-destructive focus:text-destructive cursor-pointer">
+                          <Trash2 className="h-4 w-4 mr-2" /> Deletar
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

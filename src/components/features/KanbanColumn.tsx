@@ -4,6 +4,7 @@ import { TaskCard } from './TaskCard';
 import { Button } from '@/components/ui/button';
 import type { Task, KanbanColumn as IKanbanColumn } from '@/types';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -34,14 +35,25 @@ interface Props {
 }
 
 const COLOR_OPTIONS = [
-  { label: 'Cinza (Padrão)', value: 'bg-muted' },
-  { label: 'Azul', value: 'bg-blue-500/10' },
-  { label: 'Amarelo', value: 'bg-amber-500/10' },
-  { label: 'Roxo', value: 'bg-purple-500/10' },
-  { label: 'Verde', value: 'bg-green-500/10' },
-  { label: 'Rosa', value: 'bg-pink-500/10' },
-  { label: 'Laranja', value: 'bg-orange-500/10' },
+  { label: 'Azul', value: '#3b82f6' },
+  { label: 'Verde', value: '#22c55e' },
+  { label: 'Amarelo', value: '#eab308' },
+  { label: 'Vermelho', value: '#ef4444' },
+  { label: 'Roxo', value: '#a855f7' },
+  { label: 'Cinzento', value: '#6b7280' },
 ];
+
+const resolveColor = (colorStr?: string | null) => {
+  if (!colorStr) return '#6b7280';
+  if (colorStr.startsWith('#')) return colorStr;
+  if (colorStr.includes('blue')) return '#3b82f6';
+  if (colorStr.includes('green')) return '#22c55e';
+  if (colorStr.includes('amber') || colorStr.includes('yellow')) return '#eab308';
+  if (colorStr.includes('red') || colorStr.includes('pink')) return '#ef4444';
+  if (colorStr.includes('purple')) return '#a855f7';
+  if (colorStr.includes('orange')) return '#f97316';
+  return '#6b7280';
+};
 
 export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskClick, onAddTask, onDeleteColumn, onUpdateColumn }: Props) {
   const { toast } = useToast();
@@ -124,9 +136,38 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
   };
 
   return (
-    <div className="flex-shrink-0 w-72">
-      <div className={`flex items-center justify-between mb-3 px-2 py-1.5 rounded-md ${column.color || 'bg-muted'}`}>
+    <div className="flex-shrink-0 w-72 snap-center sm:snap-none">
+      <div 
+        className="flex items-center justify-between mb-3 px-2 py-2 rounded-t-md rounded-b bg-muted/20 border-t-4 shadow-sm"
+        style={{ borderTopColor: resolveColor(column.color) }}
+      >
         <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button 
+                className="w-3.5 h-3.5 rounded-full flex-shrink-0 border shadow-sm transition-transform hover:scale-110 focus:outline-none"
+                style={{ backgroundColor: resolveColor(column.color), borderColor: 'rgba(0,0,0,0.1)' }}
+                title="Alterar cor da coluna"
+              />
+            </PopoverTrigger>
+            <PopoverContent className="w-40 p-2" side="bottom" align="start">
+              <div className="grid grid-cols-3 gap-2">
+                {COLOR_OPTIONS.map((c) => (
+                  <button
+                    key={c.value}
+                    onClick={() => onUpdateColumn(column.id, column.title, c.value)}
+                    className={cn(
+                      "h-8 w-8 rounded-full border shadow-sm flex items-center justify-center transition-transform hover:scale-110",
+                      resolveColor(column.color) === c.value ? "ring-2 ring-offset-2 ring-primary" : ""
+                    )}
+                    style={{ backgroundColor: c.value }}
+                    title={c.label}
+                  />
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -163,6 +204,7 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
               className="font-bold text-sm truncate cursor-text hover:opacity-80 py-0.5 px-1 -ml-1 rounded transition-colors"
               onClick={() => setIsEditing(true)}
               title="Clique para editar"
+              style={{ color: resolveColor(column.color) }}
             >
               {column.title}
             </h3>
@@ -182,18 +224,6 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Cores da Coluna</DropdownMenuLabel>
-              <div className="grid grid-cols-4 gap-1 p-2">
-                {COLOR_OPTIONS.map((c) => (
-                  <button
-                    key={c.value}
-                    onClick={() => onUpdateColumn(column.id, column.title, c.value)}
-                    className={`h-6 w-full rounded-md border ${c.value} ${column.color === c.value ? 'ring-2 ring-primary ring-offset-1' : ''}`}
-                    title={c.label}
-                  />
-                ))}
-              </div>
-              <DropdownMenuSeparator />
               <div className="flex items-center justify-between px-2 py-2">
                 <Label htmlFor={`is-done-${column.id}`} className="text-[11px] font-medium cursor-pointer">
                   Finaliza a tarefa
@@ -256,6 +286,11 @@ export const KanbanColumn = memo(function KanbanColumn({ column, tasks, onTaskCl
                 )}
               </Draggable>
             ))}
+            {tasks.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed border-border/50 rounded-lg text-muted-foreground/60 bg-muted/5 opacity-80">
+                <span className="text-xs font-semibold">Solte demandas aqui</span>
+              </div>
+            )}
             {provided.placeholder}
           </div>
         )}

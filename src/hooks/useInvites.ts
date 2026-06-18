@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { useAuth } from './useAuth';
-import type { Profile } from '@/types';
 
 export function useInvites() {
   const { agency, user, refreshProfile } = useAuth();
@@ -11,19 +10,18 @@ export function useInvites() {
     queryKey: ['invites', agency?.id],
     queryFn: async () => {
       if (!agency) return [];
-      const { data, error } = await supabase.from('invites').select('*').eq('agency_id', agency.id).eq('used', false).order('created_at', { ascending: false });
-      if (error) throw error;
-      return data;
+      return apiClient<any[]>('/invites');
     },
     enabled: !!agency,
   });
 
   const createInvite = useMutation({
-    mutationFn: async ({ email, role }: { email?: string; role: string }) => {
+    mutationFn: async ({ email, role, role_id, project_id }: { email?: string; role?: string; role_id?: string; project_id?: string }) => {
       if (!agency) throw new Error('No agency');
-      const { data, error } = await supabase.from('invites').insert({ agency_id: agency.id, email, role }).select().single();
-      if (error) throw error;
-      return data;
+      return apiClient<any>('/invites', {
+        method: 'POST',
+        body: JSON.stringify({ email, role, role_id, project_id })
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['invites'] }),
   });
@@ -32,12 +30,11 @@ export function useInvites() {
     mutationFn: async (token: string) => {
       if (!user) throw new Error('Must be logged in');
       
-      const { data, error } = await supabase.rpc('accept_agency_invitation', { p_token: token });
+      const result = await apiClient<{ success: boolean; message?: string; agency_id?: string }>(`/invites/${token}/accept`, {
+        method: 'POST'
+      });
       
-      if (error) throw error;
-      
-      const result = data as { success: boolean; message?: string; agency_id?: string };
-      if (result && !result.success) throw new Error(result.message);
+      if (!result.success) throw new Error(result.message);
 
       return result;
     },
@@ -50,8 +47,9 @@ export function useInvites() {
 
   const deleteInvite = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('invites').delete().eq('id', id);
-      if (error) throw error;
+      return apiClient<{ message: string }>(`/invites/${id}`, {
+        method: 'DELETE'
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['invites'] }),
   });

@@ -4,38 +4,82 @@ import { useTasks } from '@/hooks/useTasks';
 import { useTeam } from '@/hooks/useTeam';
 import { useProjects } from '@/hooks/useProjects';
 import { useColumns } from '@/hooks/useColumns';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { KanbanColumn } from '@/components/features/KanbanColumn';
 import { TaskDetailModal } from '@/components/features/TaskDetailModal';
 import { CreateTaskDialog } from '@/components/features/CreateTaskDialog';
 import { Button } from '@/components/ui/button';
-import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo, BookOpen, CalendarDays } from 'lucide-react';
+import { Plus, ChevronRight, FolderKanban, Activity, AlertCircle, ListTodo, BookOpen, CalendarDays, LayoutDashboard, Calendar, List, Settings } from 'lucide-react';
 import { DragDropContext, DropResult } from '@hello-pangea/dnd';
 import { isPast } from 'date-fns';
+import { useMemo } from 'react';
 import { logAndNotify } from '@/lib/notifications';
 import { generateTaskLink } from '@/lib/urls';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectWiki } from '@/components/features/ProjectWiki';
 import { ProjectCalendar } from '@/components/features/ProjectCalendar';
+import { ProjectListView } from '@/components/features/ProjectListView';
+import { EnvironmentSettings } from '@/components/features/EnvironmentSettings';
 
 export default function KanbanBoard() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: projects = [] } = useProjects();
-  const { data: tasks = [], updateTask } = useTasks(projectId);
+  const { user, profile: authProfile } = useAuth();
+  const { toast } = useToast();
+  
+  const [activeTab, setActiveTab] = useState<'kanban' | 'wiki' | 'calendar' | 'list' | 'settings'>('kanban');
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  
+  const isManagerOrOwner = authProfile?.role === 'manager' || authProfile?.role === 'owner';
+  const [showAllTasks, setShowAllTasks] = useState(false);
+
   const { data: columns = [], createColumn, updateColumn, deleteColumn } = useColumns(projectId);
   const { data: team = [] } = useTeam();
-  
   const currentClient = projects.find(p => p.id === projectId);
-  
   const [searchParams, setSearchParams] = useSearchParams();
   const taskIdParam = searchParams.get('task');
-  
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+
+  const { data: allTasks = [], updateTask } = useTasks(projectId);
+  const tasks = useMemo(() => {
+    return (isManagerOrOwner && showAllTasks) 
+      ? allTasks 
+      : allTasks.filter(t => t.assignee_ids?.includes(user?.id || '') || (t as any).assigned_to === user?.id);
+  }, [allTasks, isManagerOrOwner, showAllTasks, user?.id]);
+
+  // Memoize tasks grouped by column and enriched with assignees
+  const tasksByColumn = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    columns.forEach(col => {
+      map[col.id] = tasks
+        .filter(t => t.column_id === col.id)
+        .map(t => ({
+          ...t,
+          assignees: team.filter(m => (t.assignee_ids || []).includes(m.id))
+        }))
+        .sort((a, b) => {
+          const posA = a.position ?? 0;
+          const posB = b.position ?? 0;
+          if (posA !== posB) return posA - posB;
+          return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+        });
+    });
+    return map;
+  }, [tasks, columns, team]);
 
   useEffect(() => {
     if (taskIdParam) {
       setSelectedTaskId(taskIdParam);
     }
   }, [taskIdParam]);
+
+  // Set default tab based on role
+  useEffect(() => {
+    if (authProfile?.role === 'client') {
+      setActiveTab('calendar');
+    }
+  }, [authProfile]);
 
   const handleCloseModal = () => {
     setSelectedTaskId(null);
@@ -69,18 +113,54 @@ export default function KanbanBoard() {
     if (!result.destination) return;
     const taskId = result.draggableId;
     const newColumnId = result.destination.droppableId;
+    const destinationIndex = result.destination.index;
+    const sourceColumnId = result.source.droppableId;
+    const sourceIndex = result.source.index;
+    
     const task = tasks.find(t => t.id === taskId);
     if (!task) return;
 
-    const destCol = columns.find(c => c.id === newColumnId);
-    const updates: any = { id: taskId, column_id: newColumnId };
+    const destTasks = tasksByColumn[newColumnId] || [];
+    let newPosition: number;
 
-    // Set started_at if moving out of first column for the first time
+    if (sourceColumnId === newColumnId) {
+       if (sourceIndex === destinationIndex) return; // Didn't move
+
+       const listWithoutItem = Array.from(destTasks);
+       listWithoutItem.splice(sourceIndex, 1);
+       
+       const prevTask = listWithoutItem[destinationIndex - 1];
+       const nextTask = listWithoutItem[destinationIndex];
+
+       if (!prevTask) {
+          newPosition = (nextTask?.position ?? 0) - 1000;
+       } else if (!nextTask) {
+          newPosition = (prevTask?.position ?? 0) + 1000;
+       } else {
+          newPosition = ((prevTask.position ?? 0) + (nextTask.position ?? 0)) / 2;
+       }
+    } else {
+       const prevTask = destTasks[destinationIndex - 1];
+       const nextTask = destTasks[destinationIndex];
+
+       if (!prevTask && !nextTask) {
+          newPosition = 1000; // First item in column
+       } else if (!prevTask) {
+          newPosition = (nextTask?.position ?? 0) - 1000;
+       } else if (!nextTask) {
+          newPosition = (prevTask?.position ?? 0) + 1000;
+       } else {
+          newPosition = ((prevTask.position ?? 0) + (nextTask.position ?? 0)) / 2;
+       }
+    }
+
+    const destCol = columns.find(c => c.id === newColumnId);
+    const updates: any = { id: taskId, column_id: newColumnId, position: newPosition };
+
     if (task.column_id === firstColId && newColumnId !== firstColId && !task.started_at) {
       updates.started_at = new Date().toISOString();
     }
 
-    // Update completed_at based on is_done flag
     if (destCol?.is_done) {
       updates.completed_at = new Date().toISOString();
     } else {
@@ -89,7 +169,6 @@ export default function KanbanBoard() {
     
     updateTask.mutate(updates);
 
-    // Notification for "Em Aprovação" logic
     if (destCol?.title?.toLowerCase().includes('aprov') && task.column_id !== newColumnId) {
       const aIds = task.assignee_ids || [];
       for (const aId of aIds) {
@@ -118,14 +197,18 @@ export default function KanbanBoard() {
         {/* Breadcrumb & Summary Area */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-               <Link to="/projetos" className="hover:text-primary transition-colors flex items-center gap-1">
-                 <FolderKanban className="h-3 w-3" /> Projetos
-               </Link>
-               <ChevronRight className="h-3 w-3" />
-               <span className="text-foreground">Painel do Projeto</span>
-            </div>
-            <h1 className="text-3xl font-black tracking-tight text-foreground">
+            {currentClient?.space && (
+              <div className="flex items-center gap-2 mb-1">
+                <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest bg-primary/10 text-primary border border-primary/20">
+                  Ambiente: {(currentClient.space as any).name}
+                </span>
+                <div className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tight">
+                  Projeto Ativo
+                </span>
+              </div>
+            )}
+            <h1 className="text-4xl font-black tracking-tighter text-foreground">
               {currentClient?.name || 'Carregando...'}
             </h1>
           </div>
@@ -148,6 +231,19 @@ export default function KanbanBoard() {
                  <span className="text-[10px] uppercase font-bold text-destructive/70 tracking-tight">Atrasadas</span>
               </div>
             )}
+            {isManagerOrOwner && (
+              <div className="flex items-center space-x-2 bg-muted/30 px-3 py-1.5 rounded-full border w-max ml-1">
+                <Switch 
+                  id="kanban-view-all" 
+                  checked={showAllTasks} 
+                  onCheckedChange={setShowAllTasks} 
+                  className="scale-75"
+                />
+                <label htmlFor="kanban-view-all" className="text-[10px] font-bold uppercase tracking-tight cursor-pointer">
+                  Todos
+                </label>
+              </div>
+            )}
             <Button size="sm" className="ml-2 shadow-lg" onClick={() => { setCreateColumnId(firstColId); setCreateOpen(true); }}>
               <Plus className="h-4 w-4 mr-1.5" /> Nova Demanda
             </Button>
@@ -155,33 +251,44 @@ export default function KanbanBoard() {
         </div>
       </div>
 
-      <Tabs defaultValue="kanban" className="w-full">
-        <TabsList className="mb-6 bg-muted/50 w-full justify-start rounded-xl p-1 h-auto overflow-x-auto">
-          <TabsTrigger value="kanban" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <FolderKanban className="h-4 w-4" />
-            <span className="font-semibold">Quadro Kanban</span>
+      <Tabs 
+        value={activeTab} 
+        onValueChange={(v) => setActiveTab(v as any)}
+        className="w-full"
+      >
+        <TabsList className="mb-6 bg-muted/50 p-1 rounded-lg inline-flex items-center gap-1 overflow-x-auto justify-start w-full sm:w-auto border-none">
+          <TabsTrigger value="kanban" className="rounded-md gap-2 px-4 py-2 transition-all duration-200 text-muted-foreground bg-transparent border-none hover:text-foreground hover:cursor-pointer data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
+            <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+            <span className="font-semibold whitespace-nowrap">Quadro Kanban</span>
           </TabsTrigger>
-          <TabsTrigger value="wiki" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <BookOpen className="h-4 w-4" />
-            <span className="font-semibold">Wiki / Ideias</span>
+          <TabsTrigger value="list" className="rounded-md gap-2 px-4 py-2 transition-all duration-200 text-muted-foreground bg-transparent border-none hover:text-foreground hover:cursor-pointer data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
+            <List className="h-4 w-4 flex-shrink-0" />
+            <span className="font-semibold whitespace-nowrap">Lista</span>
           </TabsTrigger>
-          <TabsTrigger value="calendar" className="rounded-lg gap-2 px-4 py-2 data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-sm">
-            <CalendarDays className="h-4 w-4" />
-            <span className="font-semibold">Calendário</span>
+          <TabsTrigger value="wiki" className="rounded-md gap-2 px-4 py-2 transition-all duration-200 text-muted-foreground bg-transparent border-none hover:text-foreground hover:cursor-pointer data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
+            <BookOpen className="h-4 w-4 flex-shrink-0" />
+            <span className="font-semibold whitespace-nowrap">Wiki do Projeto</span>
           </TabsTrigger>
+          <TabsTrigger value="calendar" className="rounded-md gap-2 px-4 py-2 transition-all duration-200 text-muted-foreground bg-transparent border-none hover:text-foreground hover:cursor-pointer data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
+            <Calendar className="h-4 w-4 flex-shrink-0" />
+            <span className="font-semibold whitespace-nowrap">Calendário</span>
+          </TabsTrigger>
+          {isManagerOrOwner && (
+            <TabsTrigger value="settings" className="rounded-md gap-2 px-4 py-2 transition-all duration-200 text-muted-foreground bg-transparent border-none hover:text-foreground hover:cursor-pointer data-[state=active]:bg-background data-[state=active]:text-primary data-[state=active]:shadow-sm">
+              <Settings className="h-4 w-4 flex-shrink-0" />
+              <span className="font-semibold whitespace-nowrap">Configurações</span>
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="kanban" className="mt-0 outline-none">
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-4 items-start min-h-[50vh]">
+            <div className="flex gap-4 overflow-x-auto pb-6 pt-2 px-1 items-start min-h-[50vh] touch-pan-x snap-x snap-mandatory sm:snap-none">
               {columns.map(col => (
                 <KanbanColumn
                   key={col.id}
                   column={col}
-                  tasks={tasks.filter(t => t.column_id === col.id).map(t => ({
-                    ...t,
-                    assignees: team.filter(m => (t.assignee_ids || []).includes(m.id))
-                  })) as any}
+                  tasks={tasksByColumn[col.id] || []}
                   onTaskClick={(task) => setSelectedTaskId(task.id)}
                   onAddTask={() => { setCreateColumnId(col.id); setCreateOpen(true); }}
                   onDeleteColumn={(id) => deleteColumn.mutate(id)}
@@ -207,6 +314,14 @@ export default function KanbanBoard() {
 
         <TabsContent value="calendar" className="mt-0 outline-none">
           <ProjectCalendar projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="list" className="mt-0 outline-none">
+          <ProjectListView projectId={projectId} />
+        </TabsContent>
+
+        <TabsContent value="settings" className="mt-0 outline-none">
+          <EnvironmentSettings projectId={projectId} />
         </TabsContent>
       </Tabs>
 

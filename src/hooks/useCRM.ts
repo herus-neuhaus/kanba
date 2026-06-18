@@ -1,24 +1,22 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 import type { CRMPipeline, CRMClient, CRMDeal } from '@/types';
+import { useWorkspace } from './useWorkspace';
 
-export function useCRMPipelines() {
+export function useCRMPipelines(spaceIdOverride?: string) {
   const { agency } = useAuth();
+  const { activeWorkspaceId } = useWorkspace();
   const qc = useQueryClient();
 
+  const spaceId = spaceIdOverride !== undefined ? spaceIdOverride : activeWorkspaceId;
+
   const query = useQuery({
-    queryKey: ['crm_pipelines', agency?.id],
+    queryKey: ['crm_pipelines', agency?.id, spaceId],
     queryFn: async () => {
       if (!agency) return [];
-      const { data, error } = await supabase
-        .from('crm_pipelines')
-        .select('*')
-        .eq('agency_id', agency.id)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as CRMPipeline[];
+      const queryStr = spaceId ? `?spaceId=${spaceId}` : '';
+      return await apiClient<CRMPipeline[]>(`/crm/pipelines${queryStr}`);
     },
     enabled: !!agency,
   });
@@ -26,45 +24,27 @@ export function useCRMPipelines() {
   const createPipeline = useMutation({
     mutationFn: async (payload: { name: string; description?: string }) => {
       if (!agency) throw new Error('No agency');
-      const { data, error } = await supabase
-        .from('crm_pipelines')
-        .insert({ ...payload, agency_id: agency.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMPipeline>('/crm/pipelines', {
+        method: 'POST',
+        body: JSON.stringify({ ...payload, spaceId }),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_pipelines'] }),
   });
 
   const updatePipeline = useMutation({
     mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const { data, error } = await supabase
-        .from('crm_pipelines')
-        .update({ name })
-        .eq('id', id)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMPipeline>(`/crm/pipelines/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ name }),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_pipelines'] }),
   });
 
   const deletePipeline = useMutation({
     mutationFn: async (id: string) => {
-      // Deleta deals primeiro para contornar possivel falta de CASCADE
-      const { error: errorDeals } = await supabase
-        .from('crm_deals')
-        .delete()
-        .eq('pipeline_id', id);
-      if (errorDeals) throw errorDeals;
-      
-      const { error } = await supabase
-        .from('crm_pipelines')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      return await apiClient(`/crm/pipelines/${id}`, { method: 'DELETE' });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_pipelines'] }),
   });
@@ -72,22 +52,19 @@ export function useCRMPipelines() {
   return { ...query, createPipeline, updatePipeline, deletePipeline };
 }
 
-export function useCRMClients() {
+export function useCRMClients(spaceIdOverride?: string) {
   const { agency } = useAuth();
+  const { activeWorkspaceId } = useWorkspace();
   const qc = useQueryClient();
 
+  const spaceId = spaceIdOverride !== undefined ? spaceIdOverride : activeWorkspaceId;
+
   const query = useQuery({
-    queryKey: ['crm_clients', agency?.id],
+    queryKey: ['crm_clients', agency?.id, spaceId],
     queryFn: async () => {
       if (!agency) return [];
-      const { data, error } = await supabase
-        .from('crm_clients')
-        .select('*')
-        .eq('agency_id', agency.id)
-        .order('name');
-      
-      if (error) throw error;
-      return data as CRMClient[];
+      const queryStr = spaceId ? `?spaceId=${spaceId}` : '';
+      return await apiClient<CRMClient[]>(`/crm/clients${queryStr}`);
     },
     enabled: !!agency,
   });
@@ -95,27 +72,25 @@ export function useCRMClients() {
   const createClient = useMutation({
     mutationFn: async (payload: { name: string; status?: string; contact_info?: any }) => {
       if (!agency) throw new Error('No agency');
-      const { data, error } = await supabase
-        .from('crm_clients')
-        .insert({ ...payload, agency_id: agency.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMClient>('/crm/clients', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: payload.name,
+          status: payload.status,
+          contactInfo: payload.contact_info,
+          spaceId,
+        }),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_clients'] }),
   });
 
   const updateClient = useMutation({
     mutationFn: async ({ clientId, payload }: { clientId: string; payload: Partial<CRMClient> }) => {
-      const { data, error } = await supabase
-        .from('crm_clients')
-        .update(payload)
-        .eq('id', clientId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMClient>(`/crm/clients/${clientId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_clients'] }),
   });
@@ -131,19 +106,7 @@ export function useCRMDeals(pipelineId?: string) {
     queryKey: ['crm_deals', agency?.id, pipelineId],
     queryFn: async () => {
       if (!agency || !pipelineId) return [];
-      const { data, error } = await supabase
-        .from('crm_deals')
-        .select(`
-          *,
-          client:crm_clients (*),
-          assignee:profiles!crm_deals_assigned_to_fkey(*)
-        `)
-        .eq('agency_id', agency.id)
-        .eq('pipeline_id', pipelineId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as unknown as CRMDeal[];
+      return await apiClient<CRMDeal[]>(`/crm/deals?pipelineId=${pipelineId}`);
     },
     enabled: !!agency && !!pipelineId,
   });
@@ -151,13 +114,10 @@ export function useCRMDeals(pipelineId?: string) {
   const createDeal = useMutation({
     mutationFn: async (payload: { pipeline_id: string; client_id: string; title: string; value: number; stage: string; expected_close_date?: string; assigned_to?: string }) => {
       if (!agency) throw new Error('No agency');
-      const { data, error } = await supabase
-        .from('crm_deals')
-        .insert({ ...payload, agency_id: agency.id })
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMDeal>('/crm/deals', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_deals'] }),
   });
@@ -169,39 +129,27 @@ export function useCRMDeals(pipelineId?: string) {
       if (next_action_date !== undefined) payload.next_action_date = next_action_date;
       if (next_action_label !== undefined) payload.next_action_label = next_action_label;
 
-      const { data, error } = await supabase
-        .from('crm_deals')
-        .update(payload)
-        .eq('id', dealId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMDeal>(`/crm/deals/${dealId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_deals'] }),
   });
 
   const updateDeal = useMutation({
     mutationFn: async ({ dealId, payload }: { dealId: string; payload: Partial<CRMDeal> }) => {
-      const { data, error } = await supabase
-        .from('crm_deals')
-        .update(payload)
-        .eq('id', dealId)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
+      return await apiClient<CRMDeal>(`/crm/deals/${dealId}`, {
+        method: 'PATCH',
+        body: JSON.stringify(payload),
+      });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_deals'] }),
   });
 
   const deleteDeal = useMutation({
     mutationFn: async (dealId: string) => {
-      const { error } = await supabase
-        .from('crm_deals')
-        .delete()
-        .eq('id', dealId);
-      if (error) throw error;
+      return await apiClient(`/crm/deals/${dealId}`, { method: 'DELETE' });
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['crm_deals'] }),
   });

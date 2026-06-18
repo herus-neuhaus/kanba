@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Building2, Zap, LayoutDashboard, Globe, ShieldCheck, Loader2 } from 'lucide-react';
 import { AuthLoader } from '@/components/layout/AuthLoader';
 import { WhatsappQRModal } from '@/components/WhatsappQRModal';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 export default function Onboarding() {
   const { createAgency, agency, loading } = useAuth();
@@ -43,12 +43,10 @@ export default function Onboarding() {
       // 2. Open modal immediately (shows loading state)
       setIsModalOpen(true);
 
-      // 3. Trigger Edge Function to create instance
-      const { data, error } = await supabase.functions.invoke('create-whatsapp-instance', {
-        body: { agencyId: agencyData.id, agencyName: name }
+      // 3. Trigger API to create instance
+      const data = await apiClient<{ qrcode: string, instanceName: string }>('/integrations/whatsapp/instance', {
+        method: 'POST'
       });
-
-      if (error) throw error;
 
       if (data?.qrcode) {
         setQrCode(data.qrcode);

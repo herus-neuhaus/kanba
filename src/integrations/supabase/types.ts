@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       agencies: {
         Row: {
+          ai_active: boolean | null
           cakto_id: string | null
           created_at: string | null
           demand_types: string[] | null
@@ -32,6 +33,7 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          ai_active?: boolean | null
           cakto_id?: string | null
           created_at?: string | null
           demand_types?: string[] | null
@@ -48,6 +50,7 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          ai_active?: boolean | null
           cakto_id?: string | null
           created_at?: string | null
           demand_types?: string[] | null
@@ -64,6 +67,93 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Relationships: []
+      }
+      agency_members: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          id: string
+          role: string | null
+          role_id: string | null
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          role_id?: string | null
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          id?: string
+          role?: string | null
+          role_id?: string | null
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_members_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_members_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "agency_roles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agency_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agency_roles: {
+        Row: {
+          agency_id: string | null
+          created_at: string | null
+          id: string
+          is_immutable: boolean | null
+          name: string
+          permissions: Json
+        }
+        Insert: {
+          agency_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_immutable?: boolean | null
+          name: string
+          permissions?: Json
+        }
+        Update: {
+          agency_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_immutable?: boolean | null
+          name?: string
+          permissions?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agency_roles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comments: {
         Row: {
@@ -142,10 +232,13 @@ export type Database = {
       crm_deals: {
         Row: {
           agency_id: string
+          assigned_to: string | null
           client_id: string
           created_at: string | null
           expected_close_date: string | null
           id: string
+          next_action_date: string | null
+          next_action_label: string | null
           notes: string | null
           pipeline_id: string
           stage: string
@@ -154,10 +247,13 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          assigned_to?: string | null
           client_id: string
           created_at?: string | null
           expected_close_date?: string | null
           id?: string
+          next_action_date?: string | null
+          next_action_label?: string | null
           notes?: string | null
           pipeline_id: string
           stage?: string
@@ -166,10 +262,13 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          assigned_to?: string | null
           client_id?: string
           created_at?: string | null
           expected_close_date?: string | null
           id?: string
+          next_action_date?: string | null
+          next_action_label?: string | null
           notes?: string | null
           pipeline_id?: string
           stage?: string
@@ -182,6 +281,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_deals_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
           {
@@ -397,6 +503,7 @@ export type Database = {
           onboarding_completed: boolean | null
           phone: string | null
           role: string | null
+          role_id: string | null
           status: string | null
         }
         Insert: {
@@ -407,6 +514,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           phone?: string | null
           role?: string | null
+          role_id?: string | null
           status?: string | null
         }
         Update: {
@@ -417,6 +525,7 @@ export type Database = {
           onboarding_completed?: boolean | null
           phone?: string | null
           role?: string | null
+          role_id?: string | null
           status?: string | null
         }
         Relationships: [
@@ -425,6 +534,13 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "agency_roles"
             referencedColumns: ["id"]
           },
         ]
@@ -617,8 +733,13 @@ export type Database = {
     }
     Functions: {
       accept_agency_invitation: { Args: { p_token: string }; Returns: Json }
+      auth_user_can_manage_roles: {
+        Args: { p_agency_id: string }
+        Returns: boolean
+      }
       get_complete_schema: { Args: never; Returns: Json }
       get_invite_info: { Args: { p_token: string }; Returns: Json }
+      get_my_agencies: { Args: never; Returns: string[] }
       get_user_agency_id: { Args: never; Returns: string }
       get_user_role: { Args: never; Returns: string }
       is_agency_admin_of: { Args: { profile_id: string }; Returns: boolean }

@@ -9,33 +9,11 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 import { Badge } from "@/components/ui/badge";
 import { EnterpriseLeadModal } from '@/components/EnterpriseLeadModal';
 
-/* ═══════════════════════════════════════════════
-   DESIGN TOKENS
-═══════════════════════════════════════════════ */
-const C = {
-  bg: '#020617',         // Slate 950
-  bgDeep: '#0f172a',     // Slate 900
-  bgDeeper: '#010409',   // Near black
-  bgCard: '#1e293b',     // Slate 800
-  bgCardLight: '#334155', // Slate 700
-  palladian: '#f8fafc',  // Slate 50
-  oatmeal: '#94a3b8',    // Slate 400
-  oatmealDim: '#64748b', // Slate 500
-  gold: '#FBBF24',      // Vibrant Gold (Amber 400)
-  goldBright: '#FDE047', // Yellow 300
-  copper: '#D97706',     // Amber 600
-  copperLight: '#F59E0B', // Amber 500
-  // CTA gradients
-  gradientCta: 'linear-gradient(135deg, #D97706 0%, #F59E0B 35%, #FBBF24 75%, #FDE047 100%)',
-  gradientCtaHov: 'linear-gradient(135deg, #B45309 0%, #D97706 35%, #F59E0B 75%, #FBBF24 100%)',
-  borderSubtle: 'rgba(148, 163, 184, 0.12)',
-  borderCard: 'rgba(148, 163, 184, 0.08)',
-  // Glows updated to Amber
-  glowHero: 'radial-gradient(ellipse 900px 600px at 50% 50%, rgba(251,191,36,0.12) 0%, rgba(15,23,42,0.0) 75%)',
-  glowBA: 'radial-gradient(ellipse 1200px 400px at 50% 60%, rgba(251,191,36,0.08) 0%, transparent 75%)',
-  glowFooter: 'radial-gradient(ellipse 800px 500px at 50% 40%, rgba(251,191,36,0.15) 0%, transparent 70%)',
-  glowCard: '0 0 40px rgba(251,191,36,0.1)',
-};
+import { C } from '@/components/landing/tokens';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
+import { CtaButton } from '@/components/landing/CtaButton';
+import { MockDashboard } from '@/components/landing/MockDashboard';
+import { BentoCard } from '@/components/landing/BentoCard';
 
 /* ═══════════════════════════════════════════════
    INTERSECTION OBSERVER FADE
@@ -55,181 +33,22 @@ function useFadeIn(threshold = 0.1) {
   return { ref, visible };
 }
 
-/* ═══════════════════════════════════════════════
-   CTA BUTTON — enlarged, metallic, glowing
-═══════════════════════════════════════════════ */
-function CtaButton({ label = 'TESTAR O KANBA GRÁTIS', size = 'lg' }: { label?: string; size?: 'sm' | 'lg' }) {
-  const [hov, setHov] = useState(false);
-  const isLg = size === 'lg';
-  return (
-    <Link to="/auth" style={{ textDecoration: 'none', display: 'inline-block' }}>
-      <button
-        onMouseEnter={() => setHov(true)}
-        onMouseLeave={() => setHov(false)}
-        style={{
-          background: hov ? C.gradientCtaHov : C.gradientCta,
-          color: C.palladian,
-          fontFamily: "'Inter', sans-serif",
-          fontWeight: 700,
-          fontSize: isLg ? '1.15rem' : '0.95rem',
-          letterSpacing: '0.1em',
-          textTransform: 'uppercase',
-          padding: isLg ? '20px 52px' : '14px 36px',
-          border: 'none',
-          borderRadius: '3px',
-          cursor: 'pointer',
-          // Rich metallic glow
-          boxShadow: hov
-            ? '0 0 0 1px rgba(201,174,126,0.5), 0 8px 40px rgba(163,81,57,0.60), 0 0 80px rgba(163,81,57,0.25)'
-            : '0 0 0 1px rgba(179,155,111,0.25), 0 6px 28px rgba(163,81,57,0.45), 0 0 50px rgba(163,81,57,0.15)',
-          transition: 'all 0.28s ease',
-          transform: hov ? 'translateY(-3px) scale(1.02)' : 'none',
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 10,
-          whiteSpace: 'nowrap',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        {/* shimmer sweep */}
-        <span style={{
-          position: 'absolute', inset: 0,
-          background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.12) 50%, transparent 70%)',
-          transform: hov ? 'translateX(100%)' : 'translateX(-100%)',
-          transition: 'transform 0.5s ease',
-        }} />
-        {label}
-        <ArrowRight size={isLg ? 20 : 16} />
-      </button>
-    </Link>
-  );
-}
 
-/* ═══════════════════════════════════════════════
-   MOCK KANBAN DASHBOARD — enlarged, detailed
-═══════════════════════════════════════════════ */
-function MockDashboard() {
-  const cols = [
-    { title: 'A Fazer', color: '#6B7E94', tasks: [{ t: 'Briefing Campanha Q3', p: 'alta' }, { t: 'Criativo Instagram – Loja XY', p: 'media' }] },
-    { title: 'Em Andamento', color: '#5B8FC9', tasks: [{ t: 'Copy email – Black Friday', p: 'alta' }, { t: 'Vídeo Animado – Produto X', p: 'media' }] },
-    { title: 'Em Aprovação', color: C.gold, tasks: [{ t: 'Post Feed – Semana 18', p: 'alta' }] },
-    { title: 'Concluído', color: '#5BAA7E', tasks: [{ t: 'Landing Page – Cliente ABC', p: 'baixa' }] },
-  ];
-  const priorityColor: Record<string, string> = { alta: '#E05A4C', media: C.gold, baixa: '#5BAA7E' };
-  return (
-    <div style={{
-      background: C.bgDeeper,
-      borderRadius: '10px',
-      border: `1px solid ${C.borderSubtle}`,
-      boxShadow: `0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(179,155,111,0.1), inset 0 1px 0 rgba(255,255,255,0.05)`,
-      overflow: 'hidden',
-      width: '100%',
-    }}>
-      {/* Chrome bar */}
-      <div style={{ background: '#151E28', padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
-        <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#E05A4C', display: 'inline-block' }} />
-        <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#E5A82D', display: 'inline-block' }} />
-        <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#4CAF50', display: 'inline-block' }} />
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: 4, padding: '3px 16px', fontSize: '0.62rem', color: C.oatmealDim, fontFamily: "'Inter',sans-serif", letterSpacing: '0.06em' }}>
-            🔒 kanba.app · Painel de Demandas
-          </div>
-        </div>
-      </div>
-      {/* Kanban columns */}
-      <div style={{ display: 'flex', gap: 10, padding: '14px 14px 0' }}>
-        {cols.map(col => (
-          <div key={col.title} style={{ minWidth: 145, flex: 1, background: C.bgCard, borderRadius: 7, border: `1px solid ${C.borderCard}`, padding: '10px 10px 12px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-              <span style={{ width: 7, height: 7, borderRadius: '50%', background: col.color, flexShrink: 0, display: 'inline-block' }} />
-              <span style={{ fontSize: '0.55rem', fontFamily: "'Inter',sans-serif", color: C.oatmealDim, letterSpacing: '0.09em', fontWeight: 600 }}>{col.title.toUpperCase()}</span>
-              <span style={{ marginLeft: 'auto', fontSize: '0.5rem', background: 'rgba(255,255,255,0.07)', borderRadius: 3, padding: '1px 5px', color: C.oatmealDim }}>{col.tasks.length}</span>
-            </div>
-            {col.tasks.map(({ t, p }) => (
-              <div key={t} style={{ background: C.bgDeep, borderRadius: 5, padding: '8px 9px', borderLeft: `2px solid ${col.color}`, position: 'relative' }}>
-                <div style={{ position: 'absolute', top: 6, right: 7, width: 5, height: 5, borderRadius: '50%', background: priorityColor[p] }} />
-                <span style={{ fontSize: '0.57rem', color: C.palladian, fontFamily: "'Inter',sans-serif", lineHeight: 1.45, display: 'block', paddingRight: 10 }}>{t}</span>
-                <div style={{ marginTop: 7, display: 'flex', gap: 4, alignItems: 'center' }}>
-                  {[1, 2].map(i => (
-                    <span key={i} style={{ width: 15, height: 15, borderRadius: '50%', background: `hsl(${i * 55 + 195}, 45%, 48%)`, display: 'inline-block', border: `1.5px solid ${C.bgDeep}` }} />
-                  ))}
-                  <span style={{ fontSize: '0.48rem', color: C.oatmealDim, marginLeft: 2, fontFamily: "'Inter',sans-serif" }}>Due 15/05</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-      {/* WhatsApp toast */}
-      <div style={{ margin: '12px 14px 14px', background: '#0A2E1D', border: '1px solid rgba(37,211,102,0.25)', borderRadius: 7, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 11, boxShadow: '0 4px 20px rgba(37,211,102,0.08)' }}>
-        <div style={{ width: 34, height: 34, borderRadius: '50%', background: '#25D366', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 0 12px rgba(37,211,102,0.4)' }}>
-          <MessageSquare size={16} color="#fff" />
-        </div>
-        <div>
-          <p style={{ fontSize: '0.62rem', color: '#4CAF50', fontFamily: "'Inter',sans-serif", margin: 0, fontWeight: 600 }}>✓ Notificação automática enviada · Agora</p>
-          <p style={{ fontSize: '0.57rem', color: C.oatmeal, fontFamily: "'Inter',sans-serif", margin: 0 }}>
-            📋 <b>"Post Feed – Semana 18"</b> movida para <b style={{ color: C.gold }}>Em Aprovação</b>. Responsável: João Silva
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
+
+
 
 /* ═══════════════════════════════════════════════
    SECTION EYEBROW LABEL
 ═══════════════════════════════════════════════ */
 function Eyebrow({ children }: { children: React.ReactNode }) {
   return (
-    <p style={{ textAlign: 'center', fontSize: '0.68rem', color: C.gold, letterSpacing: '0.2em', fontFamily: "'Inter',sans-serif", textTransform: 'uppercase', marginBottom: 20, margin: '0 0 20px' }}>
+    <p style={{ textAlign: 'center', fontSize: '0.68rem', color: C.gold, letterSpacing: '0.2em', fontFamily: "'Poppins',sans-serif", textTransform: 'uppercase', marginBottom: 20, margin: '0 0 20px' }}>
       {children}
     </p>
   );
 }
 
-/* ═══════════════════════════════════════════════
-   BENTO CARD
-═══════════════════════════════════════════════ */
-function BentoCard({ icon, iconBg, tag, title, body, accent, extra, style }: {
-  icon: React.ReactNode; iconBg: string; tag: string; title: string;
-  body: string; accent: string; extra?: React.ReactNode; style?: React.CSSProperties;
-}) {
-  const [hov, setHov] = useState(false);
-  return (
-    <div
-      onMouseEnter={() => setHov(true)}
-      onMouseLeave={() => setHov(false)}
-      style={{
-        background: C.bgCard,
-        border: hov ? `1px solid ${accent}55` : `1px solid ${C.borderCard}`,
-        borderRadius: '6px',
-        padding: '30px 28px',
-        transition: 'border-color 0.25s, box-shadow 0.25s, transform 0.25s',
-        boxShadow: hov
-          ? `0 12px 40px rgba(0,0,0,0.35), 0 0 0 1px ${accent}22, 0 0 60px ${accent}10`
-          : '0 3px 16px rgba(0,0,0,0.2)',
-        transform: hov ? 'translateY(-4px)' : 'none',
-        position: 'relative',
-        overflow: 'hidden',
-        ...style,
-      }}
-    >
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg, ${accent}, ${accent}00)`, opacity: hov ? 1 : 0.5, transition: 'opacity 0.25s' }} />
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-        <div style={{ width: 48, height: 48, borderRadius: '7px', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${accent}25` }}>
-          {icon}
-        </div>
-        <div style={{ flex: 1 }}>
-          <p style={{ margin: '0 0 7px', fontSize: '0.62rem', color: accent, fontFamily: "'Inter',sans-serif", letterSpacing: '0.14em', fontWeight: 600 }}>{tag}</p>
-          <h3 style={{ margin: '0 0 10px', fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: '1.15rem', color: C.palladian, lineHeight: 1.2 }}>{title}</h3>
-          <p style={{ margin: 0, fontSize: '0.87rem', color: C.oatmeal, lineHeight: 1.65, fontWeight: 300 }}>{body}</p>
-        </div>
-      </div>
-      {extra}
-    </div>
-  );
-}
+
 
 const AGENCIES = ['Sona For Founders', 'Overfly Marketing', 'Neuhaus Digital', 'Pixel Labs', 'Futura Agency'];
 
@@ -243,53 +62,14 @@ export default function Landing() {
   const bento   = useFadeIn(0.08);
   const closing = useFadeIn(0.1);
 
-  const [scrolled, setScrolled] = useState(false);
   const [enterpriseModalOpen, setEnterpriseModalOpen] = useState(false);
-
-  useEffect(() => {
-    const h = () => setScrolled(window.scrollY > 50);
-    window.addEventListener('scroll', h, { passive: true });
-    return () => window.removeEventListener('scroll', h);
-  }, []);
 
   return (
     <div style={{ fontFamily: "'Inter',sans-serif", background: C.bg, color: C.palladian, minHeight: '100vh', overflowX: 'hidden' }}>
 
       {/* Fonts are globally imported in index.css */}
 
-      {/* ══════════════════════════════════════════
-          NAVBAR
-      ══════════════════════════════════════════ */}
-      <nav style={{
-        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
-        padding: '0 6%', height: 68,
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        background: scrolled ? 'rgba(23,32,40,0.96)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(14px)' : 'none',
-        borderBottom: scrolled ? `1px solid ${C.borderSubtle}` : 'none',
-        transition: 'all 0.35s ease',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src="/K transparante.png" alt="K" style={{ height: 34, filter: 'drop-shadow(0 0 10px rgba(163,81,57,0.65))' }} />
-          <span style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, fontSize: '1.5rem', letterSpacing: '0.14em', background: C.gradientCta, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            KANBA
-          </span>
-        </div>
-        <Link
-          to="/auth"
-          style={{
-            fontFamily: "'Inter',sans-serif", fontSize: '0.83rem', fontWeight: 500,
-            color: C.oatmeal, border: `1px solid ${C.borderSubtle}`,
-            padding: '8px 24px', borderRadius: '3px',
-            textDecoration: 'none', letterSpacing: '0.04em', transition: 'all 0.22s',
-            background: 'rgba(255,255,255,0.03)',
-          }}
-          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = C.palladian; (e.currentTarget as HTMLAnchorElement).style.borderColor = C.gold; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(179,155,111,0.08)'; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = C.oatmeal; (e.currentTarget as HTMLAnchorElement).style.borderColor = C.borderSubtle; (e.currentTarget as HTMLAnchorElement).style.background = 'rgba(255,255,255,0.03)'; }}
-        >
-          Entrar
-        </Link>
-      </nav>
+      <LandingNavbar />
 
       {/* ══════════════════════════════════════════
           HERO  — CENTRALIZED, MASSIVE HEADLINE
@@ -320,7 +100,7 @@ export default function Landing() {
 
           {/* MASSIVE H1 */}
           <h1 style={{
-            fontFamily: "'Inter',sans-serif",
+            fontFamily: "'Poppins',sans-serif",
             fontWeight: 800,
             fontSize: 'clamp(2.5rem, 6vw, 5rem)',
             lineHeight: 1.1,
@@ -424,7 +204,7 @@ export default function Landing() {
 
           {/* MASSIVE H2 */}
           <h2 style={{
-            fontFamily: "'Inter',sans-serif", fontWeight: 700,
+            fontFamily: "'Poppins',sans-serif", fontWeight: 700,
             fontSize: 'clamp(2.4rem, 5.5vw, 5rem)',
             color: C.palladian, textAlign: 'center', lineHeight: 1.05,
             margin: '0 auto 64px', maxWidth: 900,
@@ -442,7 +222,7 @@ export default function Landing() {
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(224,90,76,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid rgba(224,90,76,0.3)' }}>
                   <X size={18} color="#E05A4C" />
                 </div>
-                <h3 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, color: '#E05A4C', fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO ANTIGO</h3>
+                <h3 style={{ fontFamily: "'Poppins',sans-serif", fontWeight: 700, color: '#E05A4C', fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO ANTIGO</h3>
               </div>
               {['Demandas perdidas no WhatsApp do grupo', 'Clientes ansiosos cobrando status o dia todo', 'Equipe sem saber o que priorizar', 'Prazos estourados sem ninguém avisar', 'Reuniões longas para alinhar o básico'].map(item => (
                 <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 18 }}>
@@ -463,7 +243,7 @@ export default function Landing() {
                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(179,155,111,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid rgba(179,155,111,0.35)` }}>
                   <CheckCircle2 size={18} color={C.gold} />
                 </div>
-                <h3 style={{ fontFamily: "'Inter',sans-serif", fontWeight: 700, color: C.gold, fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO KANBA</h3>
+                <h3 style={{ fontFamily: "'Poppins',sans-serif", fontWeight: 700, color: C.gold, fontSize: '1.2rem', letterSpacing: '0.1em', margin: 0 }}>O JEITO KANBA</h3>
               </div>
               {['Kanban visual: todo mundo sabe o que está acontecendo', 'Equipe e prestadores notificados no automático via WhatsApp', 'Prioridades claras e prazos visíveis para toda equipe', 'Alertas automáticos antes do prazo vencer', 'Tudo em um só lugar. Sem reuniões desnecessárias.'].map(item => (
                 <div key={item} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 18 }}>
@@ -504,7 +284,7 @@ export default function Landing() {
 
           {/* MASSIVE H2 */}
           <h2 style={{
-            fontFamily: "'Inter',sans-serif", fontWeight: 700,
+            fontFamily: "'Poppins',sans-serif", fontWeight: 700,
             fontSize: 'clamp(2.2rem, 4.5vw, 4.2rem)',
             color: C.palladian, textAlign: 'center',
             margin: '0 auto 60px',
@@ -595,7 +375,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
           <Eyebrow>Investimento</Eyebrow>
           <h2 style={{
-            fontFamily: "'Inter',sans-serif", fontWeight: 700,
+            fontFamily: "'Poppins',sans-serif", fontWeight: 700,
             fontSize: 'clamp(2rem, 4.5vw, 3.8rem)',
             color: C.palladian, textAlign: 'center', margin: '0 0 60px',
             lineHeight: 1.1

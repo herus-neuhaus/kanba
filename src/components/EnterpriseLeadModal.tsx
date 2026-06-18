@@ -17,7 +17,7 @@ import {
   SelectValue 
 } from '@/components/ui/select';
 import { Loader2, Send, Building2, Users, Phone, Mail, User } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -51,17 +51,16 @@ export function EnterpriseLeadModal({ isOpen, onClose }: EnterpriseLeadModalProp
     setLoading(true);
 
     try {
-      const { error } = await supabase
-        .from('enterprise_leads')
-        .insert({
+      await apiClient('/crm/enterprise-leads', {
+        method: 'POST',
+        body: JSON.stringify({
           name,
           email,
           whatsapp,
-          team_size: teamSize,
-          agency_id: agency?.id || null
-        });
-
-      if (error) throw error;
+          teamSize,
+          agencyId: agency?.id || null
+        })
+      });
 
       toast({
         title: "Estamos a caminho! 🚀",

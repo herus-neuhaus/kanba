@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Calendar } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -72,7 +72,7 @@ export const TaskCard = memo(function TaskCard({ task, isDragging, isColumnDone 
                 isOverdue ? 'bg-destructive text-destructive-foreground' : 'bg-muted text-muted-foreground'
               )}>
                 <Calendar className="h-3 w-3" />
-                {format(new Date(task.due_date), 'dd MMM', { locale: ptBR })}
+                {format(new Date(task.due_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
               </div>
             ) : (
               <div className="text-[10px] text-muted-foreground/50 italic font-medium px-2 py-1">Sem data</div>
@@ -81,7 +81,14 @@ export const TaskCard = memo(function TaskCard({ task, isDragging, isColumnDone 
 
           <div className="flex items-center gap-1">
              {task.assignees?.map((assignee, i) => (
-                <Avatar key={assignee.id} className={cn("h-6 w-6 border border-background shadow-sm ring-1 ring-muted transition-transform group-hover:scale-110", i > 0 && "-ml-2")}>
+                <Avatar 
+                  key={assignee.id} 
+                  className={cn(
+                    "h-6 w-6 border-2 border-background shadow-sm ring-1 ring-border/50 transition-all duration-300 group-hover:scale-110 group-hover:z-10", 
+                    i > 0 && "-ml-2"
+                  )}
+                >
+                  <AvatarImage src={assignee.avatar_url || undefined} alt={assignee.full_name || 'Usuário'} />
                   <AvatarFallback className="bg-primary/5 text-primary text-[9px] font-black" title={assignee.full_name || 'Sem nome'}>
                     {assignee.full_name?.charAt(0)?.toUpperCase() || '?'}
                   </AvatarFallback>

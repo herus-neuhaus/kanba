@@ -16,8 +16,9 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useTasks } from '@/hooks/useTasks';
-import { ChevronLeft, ChevronRight, CalendarDays, AlertCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, AlertCircle, Loader2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { TaskDetailModal } from '@/components/features/TaskDetailModal';
 import { useTeam } from '@/hooks/useTeam';
@@ -39,10 +40,65 @@ const PRIORITY_STYLES: Record<string, string> = {
 export function ProjectCalendar({ projectId }: ProjectCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [dragOverDay, setDragOverDay] = useState<string | null>(null);
 
-  const { data: tasks = [], isLoading } = useTasks(projectId);
+  const { data: tasks = [], isLoading, updateTask } = useTasks(projectId);
   const { data: team = [] } = useTeam();
   const { data: columns = [] } = useColumns(projectId);
+  const { toast } = useToast();
+
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    e.dataTransfer.setData('taskId', taskId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, dayStr: string) => {
+    e.preventDefault();
+    if (dragOverDay !== dayStr) {
+      setDragOverDay(dayStr);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverDay(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dayStr: string) => {
+    e.preventDefault();
+    setDragOverDay(null);
+    const taskId = e.dataTransfer.getData('taskId');
+    
+    if (taskId && dayStr) {
+      // Find the task to get its existing time or just set a default time
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      // Parse the day string (yyyy-MM-dd) manually to create a local Date object
+      // This avoids the "leap bug" where new Date("yyyy-MM-dd") creates UTC midnight
+      const [year, month, day] = dayStr.split('-').map(Number);
+      const newDate = new Date(year, month - 1, day); 
+      
+      // If the task already had a time, let's try to preserve it as local time
+      if (task.due_date) {
+        const oldDate = new Date(task.due_date);
+        newDate.setHours(oldDate.getHours(), oldDate.getMinutes(), 0, 0);
+      } else {
+        newDate.setHours(12, 0, 0, 0);
+      }
+
+      updateTask.mutate({
+        id: taskId,
+        due_date: newDate.toISOString()
+      }, {
+        onSuccess: () => {
+          toast({
+            title: "Data atualizada!",
+            description: `A demanda foi movida para ${format(newDate, "dd/MM/yyyy HH:mm")}`,
+          });
+        }
+      });
+    }
+  };
 
   // Filter tasks that have a due_date
   const tasksWithDueDate = useMemo(
@@ -171,17 +227,21 @@ export function ProjectCalendar({ projectId }: ProjectCalendarProps) {
             const isLastCol = idx % 7 === 6;
             const isLastRow = idx >= gridDays.length - 7;
 
-            return (
-              <div
-                key={key}
-                className={cn(
-                  'min-h-[100px] p-2 border-r border-b border-border flex flex-col gap-1 transition-colors',
-                  isLastCol && 'border-r-0',
-                  isLastRow && 'border-b-0',
-                  !isCurrentMonth && 'bg-muted/20 opacity-60',
-                  isCurrentMonth && 'hover:bg-muted/30'
-                )}
-              >
+              return (
+                <div
+                  key={key}
+                  onDragOver={(e) => handleDragOver(e, key)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, key)}
+                  className={cn(
+                    'min-h-[100px] p-2 border-r border-b border-border flex flex-col gap-1 transition-colors relative',
+                    isLastCol && 'border-r-0',
+                    isLastRow && 'border-b-0',
+                    !isCurrentMonth && 'bg-muted/20 opacity-60',
+                    isCurrentMonth && 'hover:bg-muted/30',
+                    dragOverDay === key && 'bg-primary/10 ring-2 ring-primary/20 ring-inset z-10'
+                  )}
+                >
                 {/* Day number */}
                 <div className="flex items-center justify-end">
                   <span
@@ -211,16 +271,21 @@ export function ProjectCalendar({ projectId }: ProjectCalendarProps) {
                     return (
                       <button
                         key={task.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, task.id)}
                         onClick={() => setSelectedTaskId(task.id)}
                         title={task.title}
                         className={cn(
-                          'w-full text-left text-[11px] font-medium rounded-md px-2 py-0.5 border truncate leading-5 transition-all hover:brightness-110 hover:scale-[1.02] focus:outline-none focus:ring-1 focus:ring-ring',
+                          'w-full text-left text-[11px] font-medium rounded-md px-2 py-0.5 border truncate leading-5 transition-all hover:brightness-110 hover:scale-[1.02] focus:outline-none focus:ring-1 focus:ring-ring cursor-grab active:cursor-grabbing flex items-center gap-1',
                           isOverdue
                             ? 'bg-destructive/15 text-destructive border-destructive/30'
                             : priorityClass
                         )}
                       >
-                        {task.title}
+                        <span className="opacity-70 font-bold shrink-0">
+                          {format(parseISO(task.due_date), 'HH:mm')}
+                        </span>
+                        <span className="truncate">{task.title}</span>
                       </button>
                     );
                   })}

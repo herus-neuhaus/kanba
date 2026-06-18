@@ -1,3 +1,4 @@
+import { CommandPalette } from "@/components/features/CommandPalette";
 import { lazy, Suspense, useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
@@ -7,6 +8,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { AuthLoader } from "@/components/layout/AuthLoader";
 import { LoadingSplash } from "@/components/layout/LoadingSplash";
+import { UnauthorizedAccess } from "@/components/UnauthorizedAccess";
+import { WorkspaceProvider } from "@/hooks/useWorkspace";
 
 // ─────────────────────────────────────────────────────────────
 //  Code-split boundary:
@@ -33,6 +36,8 @@ const TaskRedirect      = lazy(() => import("@/pages/TaskRedirect"));
 const CRM               = lazy(() => import("@/pages/CRM"));
 const Reports           = lazy(() => import("@/pages/Reports"));
 const SubscriptionPending = lazy(() => import("@/pages/SubscriptionPending"));
+const SpaceProjects       = lazy(() => import("@/pages/SpaceProjects"));
+const SpaceSettings       = lazy(() => import("@/pages/SpaceSettings"));
 
 // Layouts — only needed inside the app
 const DashboardLayout = lazy(() =>
@@ -75,30 +80,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   if (!session) return <Navigate to="/auth" replace />;
 
   if (profile?.status === "inactive") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <div className="max-w-md w-full bg-card p-12 rounded border border-border text-center shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-destructive" />
-          <div className="mx-auto w-20 h-20 bg-destructive/10 rounded-3xl flex items-center justify-center mb-8 rotate-3 border border-destructive/20">
-            <div className="text-destructive font-black text-4xl">!</div>
-          </div>
-          <h1 className="text-3xl font-black uppercase tracking-tighter mb-2 italic">
-            Acesso <span className="text-destructive not-italic">Interrompido</span>
-          </h1>
-          <p className="text-xs font-bold text-muted-foreground leading-relaxed uppercase tracking-widest opacity-60">
-            Sua conta foi desativada no <br /> protocolo de segurança da agência.
-          </p>
-          <div className="mt-8 pt-8 border-t border-border/50">
-            <button
-              className="text-[10px] font-black uppercase tracking-[0.3em] text-primary hover:text-primary/70 transition-colors"
-              onClick={() => (window.location.href = "/auth")}
-            >
-              ← Reautenticar no Sistema
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+    return <UnauthorizedAccess />;
   }
 
   // ── Subscription Check ──
@@ -113,7 +95,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   // If user linked via invite or finished onboarding, skip it
   if (profile?.onboarding_completed) {
-    if (profile?.role === "client") return <Navigate to="/cliente/dashboard" replace />;
     return (
       <Suspense fallback={<LoadingSplash />}>
         <DashboardLayout>{children}</DashboardLayout>
@@ -132,7 +113,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }
 
   // Fallback for edge cases
-  if (profile?.role === "client") return <Navigate to="/cliente/dashboard" replace />;
+  if (profile?.agency_role?.role_type === "client") return <Navigate to="/cliente/dashboard" replace />;
 
   return (
     <Suspense fallback={<LoadingSplash />}>
@@ -152,9 +133,9 @@ function ClientRoute({ children }: { children: React.ReactNode }) {
   const { session, profile, agency, loading } = useAuth();
   if (loading && (!session || !profile)) return <PageLoader />;
   if (!session) return <Navigate to="/" replace />;
-  if (profile?.status === "inactive") return <Navigate to="/auth" replace />;
+  if (profile?.status === "inactive") return <UnauthorizedAccess />;
   if (!agency && !loading) return <Navigate to="/onboarding" replace />;
-  if (profile?.role !== "client") return <Navigate to="/dashboard" replace />;
+  if (profile?.agency_role?.role_type !== "client") return <Navigate to="/dashboard" replace />;
 
   return (
     <Suspense fallback={<PageLoader />}>
@@ -223,6 +204,9 @@ function AppRoutes() {
       <Route path="/settings"   element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Settings /></Suspense></ProtectedRoute>} />
       <Route path="/crm"        element={<ProtectedRoute><Suspense fallback={<PageLoader />}><CRM /></Suspense></ProtectedRoute>} />
       <Route path="/reports"    element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Reports /></Suspense></ProtectedRoute>} />
+      <Route path="/espacos/:spaceId" element={<ProtectedRoute><Suspense fallback={<PageLoader />}><Dashboard /></Suspense></ProtectedRoute>} />
+      <Route path="/espacos/:spaceId/settings" element={<ProtectedRoute><Suspense fallback={<PageLoader />}><SpaceSettings /></Suspense></ProtectedRoute>} />
+      <Route path="/espacos/:spaceId/crm" element={<ProtectedRoute><Suspense fallback={<PageLoader />}><CRM /></Suspense></ProtectedRoute>} />
       <Route 
         path="/assinatura-pendente" 
         element={
@@ -256,7 +240,10 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <AppRoutes />
+          <WorkspaceProvider>
+            <AppRoutes />
+            <CommandPalette />
+          </WorkspaceProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

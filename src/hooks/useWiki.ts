@@ -1,54 +1,45 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { useAuth } from './useAuth';
+import { useWorkspace } from './useWorkspace';
 import type { ProjectWiki } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
 
-export function useWiki(projectId: string | undefined) {
+export function useWiki(spaceIdOverride?: string) {
   const { agency } = useAuth();
+  const { activeWorkspaceId } = useWorkspace();
   const qc = useQueryClient();
   const { toast } = useToast();
 
+  const spaceId = spaceIdOverride !== undefined ? spaceIdOverride : activeWorkspaceId;
+
   const query = useQuery({
-    queryKey: ['wiki', projectId],
+    queryKey: ['wiki', spaceId],
     queryFn: async () => {
-      if (!projectId || !agency) return null;
+      if (!spaceId || !agency) return null;
       
-      const { data, error } = await supabase
-        .from('project_wikis')
-        .select('*')
-        .eq('project_id', projectId)
-        .maybeSingle();
-      
-      if (error) throw error;
-      return data as ProjectWiki | null;
+      const data = await apiClient<ProjectWiki | null>(`/wiki?spaceId=${spaceId}`);
+      return data;
     },
-    enabled: !!projectId && !!agency,
+    enabled: !!spaceId && !!agency,
   });
 
   const saveWiki = useMutation({
     mutationFn: async ({ content }: { content: any }) => {
-      if (!projectId || !agency) throw new Error('Dados inválidos para salvar a wiki');
+      if (!spaceId || !agency) throw new Error('Dados inválidos para salvar a wiki');
       
-      const { data, error } = await supabase
-        .from('project_wikis')
-        .upsert({ 
-          project_id: projectId,
-          content
-        }, {
-          onConflict: 'project_id'
-        })
-        .select()
-        .single();
+      const data = await apiClient<ProjectWiki>('/wiki', {
+        method: 'PUT',
+        body: JSON.stringify({ spaceId, content }),
+      });
 
-      if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['wiki', projectId] });
+      qc.invalidateQueries({ queryKey: ['wiki', spaceId] });
       toast({
         title: "Sucesso!",
-        description: "Wiki do projeto atualizada com sucesso.",
+        description: "Wiki do workspace atualizada com sucesso.",
       });
     },
     onError: (error) => {

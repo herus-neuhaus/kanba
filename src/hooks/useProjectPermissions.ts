@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 export type PermissionLevel = 'view' | 'edit';
 
@@ -18,12 +18,7 @@ export function useProjectPermissions(profileId?: string) {
     queryKey: ['project_permissions', profileId],
     queryFn: async () => {
       if (!profileId) return [];
-      const { data, error } = await (supabase
-        .from('project_permissions' as any) as any)
-        .select('*')
-        .eq('profile_id', profileId);
-      
-      if (error) throw error;
+      const data = await apiClient(`/project-permissions?profileId=${profileId}`);
       return data as ProjectPermission[];
     },
     enabled: !!profileId,
@@ -33,25 +28,14 @@ export function useProjectPermissions(profileId?: string) {
     mutationFn: async ({ projectId, level }: { projectId: string, level: PermissionLevel | null }) => {
       if (!profileId) throw new Error('No profile ID provided');
 
-      if (level === null) {
-        // Remove permission
-        const { error } = await (supabase
-          .from('project_permissions' as any) as any)
-          .delete()
-          .eq('profile_id', profileId)
-          .eq('project_id', projectId);
-        if (error) throw error;
-      } else {
-        // Upsert permission
-        const { error } = await (supabase
-          .from('project_permissions' as any) as any)
-          .upsert({
-            profile_id: profileId,
-            project_id: projectId,
-            permission_level: level,
-          }, { onConflict: 'profile_id,project_id' });
-        if (error) throw error;
-      }
+      await apiClient('/project-permissions', {
+        method: 'PUT',
+        body: JSON.stringify({
+          profile_id: profileId,
+          project_id: projectId,
+          permission_level: level,
+        })
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['project_permissions', profileId] });

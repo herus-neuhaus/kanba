@@ -20,6 +20,7 @@ export interface Profile {
   status: string | null;
   onboarding_completed: boolean | null;
   created_at: string | null;
+  agency_role?: any; // To support RBAC and agency permissions
 }
 
 export interface Project {
@@ -38,6 +39,7 @@ export interface Task {
   title: string;
   description: string | null;
   column_id: string | null; // Novo campo dinâmico
+  position?: number | null; // Usado para ordenação no Drag-and-Drop
   priority: 'alta' | 'media' | 'baixa' | null;
   assignee_ids: string[] | null;
   due_date: string | null;
@@ -140,4 +142,18 @@ export interface CRMDeal {
   created_at: string;
   client?: CRMClient;
   assignee?: Profile;
+}
+
+export interface InAppNotification {
+  id: string;
+  agencyId: string;
+  spaceId?: string;
+  recipientId: string;
+  actorId?: string;
+  type: string;
+  title: string;
+  content?: string;
+  link?: string;
+  isRead: boolean;
+  createdAt: string;
 }

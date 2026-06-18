@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useCan } from '@/hooks/useCan';
 import { useWhatsappStatus } from '@/hooks/useWhatsappStatus';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ export default function Settings() {
   const [isGeneratingAi, setIsGeneratingAi] = useState(false);
 
   const isManagerOrOwner = profile?.role === 'owner' || profile?.role === 'manager';
+  const canManageRoles = useCan('manage_roles') || profile?.role === 'owner';
 
   // Profile Form
   const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -83,12 +85,11 @@ export default function Settings() {
     if (!profile) return;
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ full_name: fullName, phone })
-        .eq('id', profile.id);
+      await apiClient('/me/profile', {
+        method: 'PATCH',
+        body: JSON.stringify({ full_name: fullName, phone })
+      });
 
-      if (error) throw error;
       await refreshProfile();
       toast({ title: 'Perfil atualizado!', description: 'Suas informações foram salvas com sucesso.' });
     } catch (err: any) {
@@ -103,14 +104,10 @@ export default function Settings() {
     if (!agency) return;
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('agencies')
-        .update({ name: agencyName, demand_types: demandTypes })
-        .eq('id', agency.id)
-        .select();
-  
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('Não foi possível atualizar (Permissão negada ou agência não encontrada).');
+      await apiClient('/agencies/current', {
+        method: 'PATCH',
+        body: JSON.stringify({ name: agencyName, demand_types: demandTypes })
+      });
       
       await refreshProfile();
       toast({ title: 'Agência atualizada!', description: 'As configurações da agência foram salvas.' });
@@ -136,14 +133,10 @@ export default function Settings() {
     
     try {
       const newDemandTypes = [...demandTypes, typeToAdd];
-      const { data, error } = await supabase
-        .from('agencies')
-        .update({ demand_types: newDemandTypes })
-        .eq('id', agency.id)
-        .select();
-        
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('Falha ao adicionar categoria.');
+      await apiClient('/agencies/current/demand-types', {
+        method: 'PATCH',
+        body: JSON.stringify({ demand_types: newDemandTypes })
+      });
       
       // Apenas atualizar o estado local se a API retornou sucesso
       setDemandTypes(newDemandTypes);
@@ -163,14 +156,10 @@ export default function Settings() {
     
     try {
       const newDemandTypes = demandTypes.filter(t => t !== typeToRemove);
-      const { data, error } = await supabase
-        .from('agencies')
-        .update({ demand_types: newDemandTypes })
-        .eq('id', agency.id)
-        .select();
-        
-      if (error) throw error;
-      if (!data || data.length === 0) throw new Error('Falha ao remover categoria.');
+      await apiClient('/agencies/current/demand-types', {
+        method: 'PATCH',
+        body: JSON.stringify({ demand_types: newDemandTypes })
+      });
       
       // Apenas atualizar o estado local se a API retornou sucesso
       setDemandTypes(newDemandTypes);
@@ -188,10 +177,10 @@ export default function Settings() {
     setWaInstanceLoading(true);
     setQrCode(null);
     try {
-      const { data, error } = await supabase.functions.invoke('create-whatsapp-instance', {
-        body: { agencyId: agency.id }
+      const data = await apiClient<{ qrcode: string, instanceName: string }>('/integrations/whatsapp/instance', {
+        method: 'POST'
       });
-      if (error) throw error;
+      
       if (data?.qrcode) {
         // Strip the base64 prefix if the backend doesn't, usually it's "data:image/png;base64,..." or similar, here we assume it's just base64 or prefixed.
         // The endpoint returns `data.base64` natively.
@@ -210,13 +199,9 @@ export default function Settings() {
     if (!agency) return;
     setWaInstanceLoading(true);
     try {
-      // Future: Call an edge function 'disconnect-whatsapp-instance'
-      // For now, we simulate disconnect by updating db directly
-      // In a real scenario we need to delete the instance remotely
-      const { error } = await supabase.functions.invoke('disconnect-whatsapp-instance', {
-         body: { agencyId: agency.id }
+      await apiClient('/integrations/whatsapp/instance', {
+         method: 'DELETE'
       });
-      if (error) throw error;
 
       toast({ title: 'WhatsApp Desconectado', description: 'A instância foi removida.' });
       setQrCode(null);
@@ -235,11 +220,10 @@ export default function Settings() {
     if (!agency) return;
     setIsAiActive(checked);
     try {
-      const { error } = await supabase
-        .from('agencies')
-        .update({ ai_active: checked } as any)
-        .eq('id', agency.id);
-      if (error) throw error;
+      await apiClient('/agencies/current/ai-active', {
+        method: 'PATCH',
+        body: JSON.stringify({ ai_active: checked })
+      });
       toast({ title: "Configuração KAN atualizada", description: checked ? "KAN agora está monitorando sua agência." : "Monitoramento KAN pausado." });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -250,8 +234,7 @@ export default function Settings() {
   const generateAIReport = async () => {
     setIsGeneratingAi(true);
     try {
-      const { error } = await supabase.functions.invoke('kanba-ai-monitor', { method: 'POST' });
-      if (error) throw error;
+      await apiClient('/ai/monitor', { method: 'POST' });
       toast({ title: "KAN Ativado", description: "O KAN está analisando os dados e enviará o relatório no seu WhatsApp em instantes!" });
     } catch (err: any) {
       toast({ title: "Erro na geração", description: err.message, variant: "destructive" });
@@ -275,16 +258,16 @@ export default function Settings() {
 
       <Tabs defaultValue="profile" className="space-y-8">
         <div className="flex items-center justify-center sm:justify-start overflow-x-auto pb-4 sm:pb-0 no-scrollbar">
-          <TabsList className="grid w-full grid-cols-5 sm:w-fit sm:min-w-[580px] bg-muted/40 p-1 rounded-xl ring-1 ring-border/50 shadow-sm h-12">
-            <TabsTrigger value="profile" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter">
+          <TabsList className="flex overflow-x-auto w-full sm:w-fit sm:min-w-[580px] bg-muted/40 p-1 rounded-xl ring-1 ring-border/50 shadow-sm h-12 gap-1 items-center justify-start no-scrollbar">
+            <TabsTrigger value="profile" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap px-4 shrink-0">
               <User className="h-4 w-4" /> Perfil
             </TabsTrigger>
             {isManagerOrOwner && (
-              <TabsTrigger value="agency" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter">
+              <TabsTrigger value="agency" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap px-4 shrink-0">
                 <Building2 className="h-4 w-4" /> Agência
               </TabsTrigger>
             )}
-            <TabsTrigger value="demands" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap">
+            <TabsTrigger value="demands" className="gap-2 rounded-lg data-[state=active]:shadow-md data-[state=active]:bg-background transition-all font-bold text-xs uppercase tracking-tighter whitespace-nowrap px-4 shrink-0">
               <Tag className="h-4 w-4" /> Demandas
             </TabsTrigger>
             {isManagerOrOwner && (
@@ -528,6 +511,7 @@ export default function Settings() {
 
           </div>
         </TabsContent>
+        
         {/* DEMANDS TAB */}
         <TabsContent value="demands" className="animate-in fade-in-50 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

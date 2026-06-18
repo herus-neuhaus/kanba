@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { useCRMPipelines, useCRMDeals, useCRMClients } from '@/hooks/useCRM';
 import { useTeam } from '@/hooks/useTeam';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -12,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, DollarSign, Wallet, Percent, Handshake, Plus, Calendar, UserPlus, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useWorkspace } from '@/hooks/useWorkspace';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,7 +37,10 @@ const COLUMNS: { id: CRMDealStage; label: string; color: string; border: string 
 
 export default function CRM() {
   const { agency, user } = useAuth();
-  const { data: pipelines, isLoading: loadingPipelines, createPipeline, updatePipeline, deletePipeline } = useCRMPipelines();
+  const { spaceId } = useParams<{ spaceId: string }>();
+  
+  const { data: pipelines, isLoading: loadingPipelines, createPipeline, updatePipeline, deletePipeline } = useCRMPipelines(spaceId);
+  const { activeWorkspaceId, workspaces } = useWorkspace();
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | undefined>();
   const [myDealsOnly, setMyDealsOnly] = useState(false);
   
@@ -43,6 +48,7 @@ export default function CRM() {
   const [isPipelineModalOpen, setIsPipelineModalOpen] = useState(false);
   const [newPipelineName, setNewPipelineName] = useState('');
   const [newPipelineDesc, setNewPipelineDesc] = useState('');
+  const [newPipelineSpaceId, setNewPipelineSpaceId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Modal de Edição de Funil
@@ -70,10 +76,11 @@ export default function CRM() {
   const [newClientName, setNewClientName] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientSpaceId, setNewClientSpaceId] = useState('');
   const [isSubmittingClient, setIsSubmittingClient] = useState(false);
 
   const { data: deals, isLoading: loadingDeals, updateDealStage, createDeal } = useCRMDeals(selectedPipelineId);
-  const { data: clients, createClient } = useCRMClients();
+  const { data: clients, createClient } = useCRMClients(spaceId);
 
   // Hook para Responsáveis (Closer) Mock Whatsapp
   const { data: teamMembers } = useTeam();
@@ -139,13 +146,15 @@ export default function CRM() {
   };
 
   const handleCreatePipeline = async () => {
-    if (!newPipelineName.trim()) {
-      toast.error('O nome do funil é obrigatório');
+    const spaceToUse = activeWorkspaceId || newPipelineSpaceId;
+    if (!newPipelineName.trim() || !spaceToUse) {
+      toast.error('Nome do funil e Workspace são obrigatórios');
       return;
     }
     try {
       setIsSubmitting(true);
-      const res = await createPipeline.mutateAsync({ name: newPipelineName.trim(), description: newPipelineDesc.trim() });
+      // Hack para injetar spaceId na mutation do useCRMPipelines já que no modo global ele pega null (que dá erro de schema no db)
+      const res = await createPipeline.mutateAsync({ name: newPipelineName.trim(), description: newPipelineDesc.trim(), spaceId: spaceToUse } as any);
       if (res) setSelectedPipelineId(res.id);
       setIsPipelineModalOpen(false);
       setNewPipelineName('');
@@ -159,8 +168,9 @@ export default function CRM() {
   };
 
   const handleCreateClient = async () => {
-    if (!newClientName.trim()) {
-      toast.error('O nome do cliente é obrigatório');
+    const spaceToUse = activeWorkspaceId || newClientSpaceId;
+    if (!newClientName.trim() || !spaceToUse) {
+      toast.error('Nome do cliente e Workspace são obrigatórios');
       return;
     }
     try {
@@ -168,8 +178,9 @@ export default function CRM() {
       const newClient = await createClient.mutateAsync({ 
         name: newClientName.trim(), 
         status: 'prospect',
-        contact_info: { phone: newClientPhone.trim(), email: newClientEmail.trim() }
-      });
+        contact_info: { phone: newClientPhone.trim(), email: newClientEmail.trim() },
+        spaceId: spaceToUse // HACK: passando no payload
+      } as any);
       
       setNewDealClientId(newClient.id);
       setIsCreatingNewClient(false);
@@ -353,6 +364,19 @@ export default function CRM() {
                   onKeyDown={(e) => e.key === 'Enter' && handleCreatePipeline()} autoFocus
                 />
               </div>
+              {!activeWorkspaceId && (
+                <div className="space-y-2">
+                  <Label>Workspace <span className="text-destructive">*</span></Label>
+                  <Select value={newPipelineSpaceId} onValueChange={setNewPipelineSpaceId}>
+                    <SelectTrigger><SelectValue placeholder="Selecione um Workspace..." /></SelectTrigger>
+                    <SelectContent>
+                      {workspaces.map(w => (
+                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsPipelineModalOpen(false)}>Cancelar</Button>
@@ -562,6 +586,19 @@ export default function CRM() {
                 value={newPipelineName} onChange={(e) => setNewPipelineName(e.target.value)}
               />
             </div>
+            {!activeWorkspaceId && (
+              <div className="space-y-2">
+                <Label>Workspace <span className="text-destructive">*</span></Label>
+                <Select value={newPipelineSpaceId} onValueChange={setNewPipelineSpaceId}>
+                  <SelectTrigger><SelectValue placeholder="Selecione um Workspace..." /></SelectTrigger>
+                  <SelectContent>
+                    {workspaces.map(w => (
+                      <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="desc">Descrição (Opcional)</Label>
               <Textarea 
@@ -596,6 +633,19 @@ export default function CRM() {
                  <Label>Nome da Empresa / Cliente <span className="text-destructive">*</span></Label>
                  <Input value={newClientName} onChange={e => setNewClientName(e.target.value)} placeholder="Ex: Havan" autoFocus />
                </div>
+               {!activeWorkspaceId && (
+                  <div className="space-y-2">
+                    <Label>Workspace do Cliente <span className="text-destructive">*</span></Label>
+                    <Select value={newClientSpaceId} onValueChange={setNewClientSpaceId}>
+                      <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                      <SelectContent>
+                        {workspaces.map(w => (
+                          <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+               )}
                <div className="space-y-2">
                  <Label>WhatsApp / Telefone</Label>
                  <Input value={newClientPhone} onChange={e => setNewClientPhone(e.target.value)} placeholder="(DD) 90000-0000" />

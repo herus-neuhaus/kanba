@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import type { Profile, Agency } from '@/types';
 
 interface AuthContextType {
@@ -40,38 +41,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle(); // Use maybeSingle to avoid throwing on 0 rows
+      const context = await apiClient<{ user: any; profile: Profile | null; agency: Agency | null }>('/me');
 
-      if (profileError) throw profileError;
-
-      if (profileData) {
-        setProfile(profileData as Profile);
+      if (context.profile) {
+        setProfile(context.profile);
         
-        if (profileData.agency_id) {
-          const { data: agencyData, error: agencyError } = await supabase
-            .from('agencies')
-            .select('*')
-            .eq('id', profileData.agency_id)
-            .maybeSingle();
-          
-          if (!agencyError && agencyData) {
-            setAgency(agencyData as Agency);
-          } else {
-            setAgency(null);
-          }
+        if (context.agency) {
+          localStorage.setItem('active_agency_id', context.agency.id);
+          setAgency(context.agency);
         } else {
           setAgency(null);
+          const storedActiveId = localStorage.getItem('active_agency_id');
+          if (storedActiveId) {
+             console.warn("Auth: Access revoked for agency", storedActiveId);
+             localStorage.removeItem('active_agency_id');
+             window.alert("Seu acesso a esta agência foi inativado ou removido pelo administrador.");
+          }
         }
       } else {
         setProfile(null);
         setAgency(null);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Auth: Error fetching profile", e);
+      if (e.message?.includes('Forbidden') || e.message?.includes('inativada') || e.message?.includes('access')) {
+        localStorage.removeItem('active_agency_id');
+        window.alert("Seu acesso foi revogado ou sua conta foi inativada.");
+      }
       setProfile(null);
       setAgency(null);
     }
@@ -82,30 +78,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!inviteToken) return;
 
     try {
-      console.log("Auth: Processing invite token via RPC", inviteToken);
+      console.log("Auth: Processing invite token via API", inviteToken);
       
-      const { data, error } = await supabase.rpc('accept_agency_invitation', { p_token: inviteToken });
+      const result = await apiClient<{ success: boolean; message?: string; agency_id?: string }>(`/invites/${inviteToken}/accept`, {
+        method: 'POST'
+      });
       
-      if (error) {
-        console.error("Auth: RPC Error processing invite", error);
-        localStorage.removeItem('invite_token');
-        return;
-      }
-
-      const result = data as { success: boolean; message?: string };
-      if (result && !result.success) {
+      if (!result || !result.success) {
         console.warn("Auth: Invite rejection", result.message);
         localStorage.removeItem('invite_token');
         return;
       }
 
       localStorage.removeItem('invite_token');
-      console.log("Auth: Invite processed successfully via RPC");
+      console.log("Auth: Invite processed successfully via API");
       
-      // Refresh profile to reflect changes
-      await fetchProfile(userId);
+      if (result.agency_id) {
+         localStorage.setItem('active_agency_id', result.agency_id);
+      }
+      
+      // Profile will be fetched afterwards sequentially by the useEffect
     } catch (err) {
       console.error("Auth: Error processing invite", err);
+      localStorage.removeItem('invite_token');
     }
   };
 
@@ -204,19 +199,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const createAgency = async (name: string): Promise<Agency> => {
     if (!user) throw new Error('Not authenticated');
-    const { data, error } = await supabase.from('agencies').insert({ 
-      name, 
-      owner_user_id: user.id,
-      plan_type: 'pro',
-      subscription_status: 'trialing'
-    }).select().single();
-    if (error) throw error;
-    const agencyData = data as Agency;
-    await supabase.from('profiles').update({ 
-      agency_id: agencyData.id, 
-      role: 'owner',
-      onboarding_completed: true 
-    }).eq('id', user.id);
+    
+    const agencyData = await apiClient('/agencies', {
+      method: 'POST',
+      body: JSON.stringify({ name })
+    });
+    
+    localStorage.setItem('active_agency_id', agencyData.id);
     setAgency(agencyData);
     await fetchProfile(user.id);
     return agencyData;

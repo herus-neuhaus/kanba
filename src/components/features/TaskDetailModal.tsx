@@ -26,7 +26,7 @@ import { useComments } from '@/hooks/useComments';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { DEMAND_TYPES } from '@/types';
-import { Send, Plus, Trash2, Save, X, Layout, Users, Calendar, AlignLeft, CheckSquare, MessageSquare } from 'lucide-react';
+import { Send, Plus, Trash2, Save, X, Layout, Users, Calendar, AlignLeft, CheckSquare, MessageSquare, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sendWhatsAppNotification } from '@/lib/evolution';
@@ -34,6 +34,7 @@ import { generateTaskLink } from '@/lib/urls';
 import { renderTextWithMentions } from '@/lib/mentions';
 import { MentionInput } from './MentionInput';
 import { renderTextWithLinks } from '@/lib/linkify';
+import { RichTextEditor } from './RichTextEditor';
 import type { Task, Profile, ChecklistItem } from '@/types';
 
 interface Props {
@@ -74,9 +75,11 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
     try {
       const { assignees, project, column, comments, created_at, ...payload } = cardData;
 
-      // Ensure due_date is saved as end-of-day ISO to avoid timezone shifts
+      // Combine date and time
       if (payload.due_date && payload.due_date.length === 10) {
-        payload.due_date = new Date(payload.due_date + 'T23:59:59').toISOString();
+        // Find existing time or default to 23:59:59
+        const timeInput = (document.getElementById('due-time') as HTMLInputElement)?.value || '23:59';
+        payload.due_date = new Date(`${payload.due_date}T${timeInput}:00`).toISOString();
       }
 
       if (!payload.assignee_ids || payload.assignee_ids.length === 0) {
@@ -300,11 +303,23 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 flex-1">
               <label className="text-xs font-semibold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
                 <Calendar className="h-3 w-3" /> Data de Entrega
               </label>
               <Input disabled={isClient} type="date" className="w-full premium-input" value={cardData.due_date ? cardData.due_date.substring(0, 10) : ''} onChange={e => updateCardLocal({ due_date: e.target.value || null })} />
+            </div>
+            <div className="space-y-1.5 w-32">
+              <label className="text-xs font-semibold text-muted-foreground uppercase px-1 flex items-center gap-1.5">
+                <Clock className="h-3 w-3" /> Hora
+              </label>
+              <Input 
+                id="due-time"
+                disabled={isClient} 
+                type="time" 
+                className="w-full premium-input" 
+                defaultValue={cardData.due_date ? format(new Date(cardData.due_date), 'HH:mm') : '23:59'} 
+              />
             </div>
           </div>
 
@@ -313,22 +328,25 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
               <AlignLeft className="h-3 w-3" /> Descrição
             </label>
             {isEditingDescription && !isClient ? (
-              <BalanceTextarea
-                autoFocus
-                placeholder="Adicione uma descrição mais detalhada para esta demanda..."
-                value={cardData.description || ''}
-                onChange={(e: any) => updateCardLocal({ description: e.target.value })}
-                onBlur={() => setIsEditingDescription(false)}
-                rows={4}
-              />
+              <div className="flex flex-col gap-2">
+                <RichTextEditor
+                  content={cardData.description || ''}
+                  onChange={(html) => updateCardLocal({ description: html })}
+                />
+                <div className="flex justify-end">
+                  <Button size="sm" onClick={() => setIsEditingDescription(false)}>
+                    Concluir Edição
+                  </Button>
+                </div>
+              </div>
             ) : (
               <div 
                 onDoubleClick={() => !isClient && setIsEditingDescription(true)}
-                className={`text-sm leading-relaxed p-2 min-h-[80px] rounded-md transition-colors whitespace-pre-wrap break-words ${!isClient ? 'hover:bg-muted/30 cursor-text' : 'bg-muted/10'}`}
+                className={`text-sm leading-relaxed p-2 min-h-[80px] rounded-md transition-colors break-words prose prose-sm dark:prose-invert max-w-none ${!isClient ? 'hover:bg-muted/30 cursor-text' : 'bg-muted/10'}`}
                 title={!isClient ? "Clique duas vezes para editar" : ""}
               >
                 {cardData.description ? (
-                  renderTextWithLinks(cardData.description)
+                  <div dangerouslySetInnerHTML={{ __html: cardData.description }} />
                 ) : (
                   <span className="text-muted-foreground italic">Nenhuma descrição fornecida...</span>
                 )}
@@ -514,12 +532,3 @@ export function TaskDetailModal({ task, team, open, onClose, columns }: Props) {
   );
 }
 
-function BalanceTextarea({ className, onChange, ...props }: any) {
-  return (
-    <Textarea
-      className={`resize-none min-h-[100px] ${className}`}
-      onChange={onChange}
-      {...props}
-    />
-  );
-}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 
 export function useWhatsappStatus(agencyId: string | undefined) {
   const [isConnected, setIsConnected] = useState(false);
@@ -9,24 +9,22 @@ export function useWhatsappStatus(agencyId: string | undefined) {
   useEffect(() => {
     if (!agencyId) return;
 
+    let isMounted = true;
+
     const checkStatus = async () => {
       try {
-        // Obter o status local rapidamente
-        const { data: localData } = await supabase
-          .from('agencies')
-          .select('whatsapp_connected, evolution_instance_name')
-          .eq('id', agencyId)
-          .single();
-
-        setInstanceName(localData?.evolution_instance_name || null);
-        setIsConnected(!!localData?.whatsapp_connected);
-
-        // Real-time API check removed as we rely on database status and webhooks
-
+        const data = await apiClient<{ whatsappConnected: boolean; evolutionInstanceName: string | null }>('/integrations/whatsapp/status');
+        
+        if (isMounted) {
+          setInstanceName(data.evolutionInstanceName);
+          setIsConnected(!!data.whatsappConnected);
+        }
       } catch (err) {
         console.error('Error checking whatsapp status:', err);
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
@@ -36,32 +34,9 @@ export function useWhatsappStatus(agencyId: string | undefined) {
     // Polling every 5 seconds
     const interval = setInterval(checkStatus, 5000);
 
-    // Also subscribe to changes for immediate update
-    const channel = supabase
-      .channel(`agency-status-${agencyId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'agencies',
-          filter: `id=eq.${agencyId}`,
-        },
-        (payload) => {
-          if (payload.new) {
-            setIsConnected(!!payload.new.whatsapp_connected);
-            if (payload.new.evolution_instance_name) {
-               setInstanceName(payload.new.evolution_instance_name);
-            }
-            setLoading(false);
-          }
-        }
-      )
-      .subscribe();
-
     return () => {
+      isMounted = false;
       clearInterval(interval);
-      supabase.removeChannel(channel);
     };
   }, [agencyId]);
 

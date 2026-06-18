@@ -1,5 +1,5 @@
 /* Google Fonts — must be first, before @tailwind directives */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -25,38 +25,38 @@
 @layer base {
   :root {
     /* ── Backgrounds ── */
-    --background:        222 47% 4%;    /* #020617 Deep Slate     */
-    --foreground:        210 40% 98%;   /* Slate 50               */
+    --background:        230 25% 10%;   /* Deep Violet Slate */
+    --foreground:        210 40% 98%;
 
-    --card:              222 47% 11%;   /* #0F172A Slate 900      */
+    --card:              230 25% 14%;   /* Slightly lighter violet */
     --card-foreground:   210 40% 98%;
 
-    --popover:           222 47% 7%;    /* Slightly off-black     */
+    --popover:           230 25% 12%;
     --popover-foreground: 210 40% 98%;
 
-    /* ── Brand: Vibrant Gold as primary ── */
-    --primary:           45 96% 56%;    /* #FBBF24 Amber-400      */
-    --primary-foreground: 222 47% 4%;   /* Deep dark text on gold */
+    /* ── Brand: Violet as primary ── */
+    --primary:           262 83% 58%;   /* #7C3AED Violet */
+    --primary-foreground: 210 40% 98%;
 
     /* ── Secondary / Muted ── */
-    --secondary:         217 33% 17%;   /* #1E293B Slate 800      */
-    --secondary-foreground: 215 16% 65%;
+    --secondary:         262 50% 20%;   /* Deep purple secondary */
+    --secondary-foreground: 262 83% 80%;
 
-    --muted:             217 33% 15%;   /* #1A2234                */
-    --muted-foreground:  215 16% 65%;   /* #94A3B8 Slate 400      */
+    --muted:             230 20% 18%;
+    --muted-foreground:  230 20% 70%;
 
     /* ── Accent ── */
-    --accent:            217 33% 17%;   /* #1E293B Slate 800      */
+    --accent:            262 50% 20%;
     --accent-foreground: 210 40% 98%;
 
     /* ── Destructive ── */
-    --destructive:       0 84% 60%;     /* Vibrant Red            */
+    --destructive:       0 84% 60%;
     --destructive-foreground: 210 40% 98%;
 
     /* ── Borders & inputs ── */
-    --border:            215 25% 27%;   /* #334155 Slate 700      */
-    --input:             215 25% 27%;
-    --ring:              45 96% 56%;    /* Gold Ring              */
+    --border:            230 20% 20%;
+    --input:             230 20% 20%;
+    --ring:              262 83% 58%;
 
     --radius: 0.5rem;
 
@@ -67,14 +67,14 @@
     --warning-foreground: 222 47% 4%;
 
     /* ── Sidebar ── */
-    --sidebar-background:         222 47% 4%;
-    --sidebar-foreground:         215 16% 65%;
-    --sidebar-primary:            45 96% 56%;
-    --sidebar-primary-foreground: 222 47% 4%;
-    --sidebar-accent:             217 33% 17%;
+    --sidebar-background:         230 25% 10%;
+    --sidebar-foreground:         230 20% 70%;
+    --sidebar-primary:            262 83% 58%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent:             262 50% 20%;
     --sidebar-accent-foreground:  210 40% 98%;
-    --sidebar-border:             215 25% 27%;
-    --sidebar-ring:               45 96% 56%;
+    --sidebar-border:             230 20% 20%;
+    --sidebar-ring:               262 83% 58%;
   }
 }
 
@@ -90,9 +90,9 @@
     font-weight: 400;
   }
 
-  /* Apply Oswald to all headings */
+  /* Apply Poppins to all headings */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Poppins', system-ui, sans-serif;
     letter-spacing: -0.02em;
     font-weight: 600;
   }
@@ -101,7 +101,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded;
+    @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-xl rounded-xl transition-all duration-300;
+  }
+  
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-lg border border-white/5 rounded-2xl;
   }
 
   .perspective-1000 {

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
+import { apiClient } from '@/lib/api/client';
 import { useAuth } from './useAuth';
 import { isBefore, startOfDay, differenceInHours, isAfter, parseISO } from 'date-fns';
 
@@ -11,29 +11,17 @@ export function useAgencyStats(dateRange?: { from: Date; to: Date }) {
     queryFn: async () => {
       if (!agency) return null;
 
-      // Fetch core data
-      const [tasksRes, profilesRes, projectsRes] = await Promise.all([
-        supabase
-          .from('tasks')
-          .select('*, project:projects(name), column:kanban_columns(is_done)')
-          .eq('agency_id', agency.id),
-        supabase
-          .from('profiles')
-          .select('*')
-          .eq('agency_id', agency.id),
-        supabase
-          .from('projects')
-          .select('*')
-          .eq('agency_id', agency.id)
-      ]);
+      // Fetch core data from Fastify API
+      const response = await apiClient<{
+        tasks: any[];
+        profiles: any[];
+        projects: any[];
+      }>('/agencies/current/stats');
 
-      if (tasksRes.error) throw tasksRes.error;
-      if (profilesRes.error) throw profilesRes.error;
-      if (projectsRes.error) throw projectsRes.error;
+      const tasks = response.tasks || [];
+      const profiles = response.profiles || [];
+      const projects = response.projects || [];
 
-      const tasks = tasksRes.data || [];
-      const profiles = profilesRes.data || [];
-      const projects = projectsRes.data || [];
 
       // Helper for column logic
       const getColumnIsDone = (task: any) => {

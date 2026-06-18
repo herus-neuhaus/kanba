@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import type { KanbanColumn } from '@/types';
 import { useToast } from '@/components/ui/use-toast';
+import { apiClient } from '@/lib/api/client';
 
 export function useColumns(projectId: string | undefined) {
   const { agency } = useAuth();
@@ -13,13 +13,8 @@ export function useColumns(projectId: string | undefined) {
     queryKey: ['columns', projectId],
     queryFn: async () => {
       if (!projectId || !agency) return [];
-      const { data, error } = await supabase
-        .from('kanban_columns')
-        .select('*')
-        .eq('project_id', projectId)
-        .order('order_index', { ascending: true });
-      if (error) throw error;
-      return data as KanbanColumn[];
+      const data = await apiClient<KanbanColumn[]>(`/projects/${projectId}/columns`);
+      return data;
     },
     enabled: !!projectId && !!agency,
   });
@@ -27,12 +22,11 @@ export function useColumns(projectId: string | undefined) {
   const createColumn = useMutation({
     mutationFn: async ({ title, order_index, color, is_done = false }: { title: string; order_index: number; color: string; is_done?: boolean }) => {
       if (!projectId || !agency) throw new Error('Dados inválidos para criar coluna');
-      const { data, error } = await supabase
-        .from('kanban_columns')
-        .insert({ project_id: projectId, title, order_index, color, is_done })
-        .select();
-      if (error) throw error;
-      return (data ? data[0] : null) as KanbanColumn;
+      const data = await apiClient<KanbanColumn>(`/projects/${projectId}/columns`, {
+        method: 'POST',
+        body: JSON.stringify({ title, order_index, color, is_done }),
+      });
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['columns', projectId] });
@@ -55,13 +49,11 @@ export function useColumns(projectId: string | undefined) {
       if (order_index !== undefined) updates.order_index = order_index;
       if (is_done !== undefined) updates.is_done = is_done;
 
-      const { data, error } = await supabase
-        .from('kanban_columns')
-        .update(updates)
-        .eq('id', id)
-        .select();
-      if (error) throw error;
-      return (data ? data[0] : null) as KanbanColumn;
+      const data = await apiClient<KanbanColumn>(`/columns/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(updates),
+      });
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['columns', projectId] });
@@ -70,11 +62,9 @@ export function useColumns(projectId: string | undefined) {
 
   const deleteColumn = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('kanban_columns')
-        .delete()
-        .eq('id', id);
-      if (error) throw error;
+      await apiClient(`/columns/${id}`, {
+        method: 'DELETE',
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['columns', projectId] });

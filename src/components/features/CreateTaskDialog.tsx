@@ -12,7 +12,8 @@ import { DEMAND_TYPES } from '@/types';
 import { logAndNotify } from '@/lib/notifications';
 import { format } from 'date-fns';
 import { generateTaskLink } from '@/lib/urls';
-import { X, PlusCircle, Type, AlignLeft, UserCircle, Calendar } from 'lucide-react';
+import { X, PlusCircle, Type, AlignLeft, UserCircle, Calendar, Clock } from 'lucide-react';
+import { RichTextEditor } from './RichTextEditor';
 import type { Profile, KanbanColumn } from '@/types';
 
 interface Props {
@@ -40,6 +41,7 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
   const [priority, setPriority] = useState<'alta' | 'media' | 'baixa'>('baixa');
   const [assigneeIds, setAssigneeIds] = useState<string[]>([]);
   const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('23:59');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -67,7 +69,7 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
         priority,
         project_id: projectId,
         assignee_ids: assigneeIds,
-        due_date: dueDate ? new Date(dueDate + 'T23:59:59').toISOString() : undefined,
+        due_date: dueDate ? new Date(`${dueDate}T${dueTime || '23:59'}:00`).toISOString() : undefined,
         labels: [demandType],
       });
 
@@ -77,8 +79,7 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
           const assignee = team.find(m => m.id === aId);
           const project = projects.find(p => p.id === projectId);
           if (assignee?.phone) {
-            const [year, month, day] = dueDate.split('-').map(String);
-            const dateStr = `${day}/${month}/${year}`;
+            const dateStr = format(new Date(`${dueDate}T${dueTime || '23:59'}:00`), 'dd/MM/yyyy HH:mm');
             const link = generateTaskLink(projectId!, newTask.id);
             const msg = `📋 *Nova Demanda Recebida*\n\nOlá ${assignee.full_name}!\nVocê foi atribuído a uma demanda: *${title}*\nProjeto: *${project?.name || 'Agência'}*\nPrazo: *${dateStr}*\n\n👉 *Acesse direto a tarefa aqui:*\n🔗 ${link}`;
             logAndNotify(newTask.id, 'creation', assignee.phone, msg);
@@ -147,11 +148,10 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
             <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
               <AlignLeft className="h-3 w-3" /> Descrição
             </label>
-            <Textarea 
+            <RichTextEditor 
+              content={description} 
+              onChange={setDescription} 
               placeholder="Detalhes sobre a demanda..." 
-              value={description} 
-              onChange={e => setDescription(e.target.value)} 
-              className="premium-input min-h-[100px] resize-none"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -201,16 +201,29 @@ export function CreateTaskDialog({ open, onClose, projectId, defaultColumnId, te
             </div>
           )}
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
-              <Calendar className="h-3 w-3" /> Prazo de Entrega
-            </label>
-            <Input 
-              type="date" 
-              value={dueDate} 
-              onChange={e => setDueDate(e.target.value)} 
-              className="premium-input"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5 flex-1">
+              <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
+                <Calendar className="h-3 w-3" /> Prazo de Entrega
+              </label>
+              <Input 
+                type="date" 
+                value={dueDate} 
+                onChange={e => setDueDate(e.target.value)} 
+                className="premium-input"
+              />
+            </div>
+            <div className="space-y-1.5 w-32">
+              <label className="text-xs font-semibold uppercase px-1 text-muted-foreground flex items-center gap-1.5">
+                <Clock className="h-3 w-3" /> Hora
+              </label>
+              <Input 
+                type="time" 
+                value={dueTime} 
+                onChange={e => setDueTime(e.target.value)} 
+                className="premium-input"
+              />
+            </div>
           </div>
           <Button type="submit" className="w-full" disabled={createTask.isPending}>Criar Demanda</Button>
         </form>

@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useInvites } from '@/hooks/useInvites';
-import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -33,10 +32,16 @@ export default function Join() {
         if (token) {
           localStorage.setItem('invite_token', token);
         }
-        const { data, error: fetchError } = await supabase.rpc('get_invite_info', { p_token: token });
-        const result = data as { success: boolean; message?: string; agency_name?: string; role?: string; agency_id?: string };
+        
+        // Use our public API instead of the Supabase RPC
+        const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3333/api/v1'}/invites/${token}`);
+        if (!response.ok) {
+           const errData = await response.json().catch(() => ({}));
+           throw new Error(errData.message || 'Convite inválido ou expirado');
+        }
+        const result = await response.json();
  
-        if (fetchError || !result || !result.success) throw new Error(result?.message || 'Convite inválido ou expirado');
+        if (!result || !result.success) throw new Error(result?.message || 'Convite inválido ou expirado');
         
         setInviteData(result);
       } catch (err: any) {

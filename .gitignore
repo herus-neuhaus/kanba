@@ -23,4 +23,20 @@ dist-ssr
 *.sln
 *.sw?
 .env
+.env.*
 keys.json
+
+# AI Agent & Temp Files
+.agent/
+.agents/
+temp_skills/
+skills_list.txt
+design_system_output.txt
+build_log.txt
+*.log
+
+# Scripts & Docs (Local Only)
+install-skills.sh
+update-landing.ps1
+design-system/
+docs/
